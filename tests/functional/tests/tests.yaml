@@ -1,0 +1,13 @@
+charm_name: cloudsupport
+tests:
+ - tests.modules.test_cloudsupport.CloudSupportTests
+gate_bundles:
+  - focal
+dev_bundles:
+  - focal
+smoke_bundles:
+  - focal
+before_deploy:
+- tests.modules.setup.model_config
+
+

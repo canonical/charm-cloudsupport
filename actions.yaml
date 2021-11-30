@@ -1,0 +1,35 @@
+create-test-instance:
+  description: Create a test instance on one or more nodes
+  params:
+    nodes:
+      type: string
+      description: Comma-separated node list
+    physnet:
+      type: string
+      description: extra SR-IOV physnets to create
+    vcpus:
+      type: integer
+      default: 24
+      description: number of vcpus to allocate for an instance
+    vnfspecs:
+      type: boolean
+      default: true
+      description: add hugepages and cpu pinning if true
+  required: [nodes]
+delete-test-instance:
+  description: Delete instances from given nodes matching the name 'bootstack-test-.*' (DANGER! This _will_ wipe your instances without asking for confirmation!)
+  params:
+    nodes:
+      type: string
+      description: Comma-separated node list
+    pattern:
+      type: string
+      default: ^bootstack-test-.*
+      description: instance name regex pattern
+  required: [nodes]
+test-connectivity:
+  description: Run connectivity tests
+  params:
+    instance:
+      type: string
+      description: Instance to test. Default is to test all "bootstack-test-*" instances

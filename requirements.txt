@@ -1,0 +1,5 @@
+charmhelpers
+ops
+click
+fabric
+python-openstackclient

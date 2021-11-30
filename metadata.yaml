@@ -1,0 +1,11 @@
+name: cloudsupport
+display-name: Cloud Support
+summary: Support cloud operations
+maintainer: BootStack Charmers <bootstack-charmers@lists.canonical.com>
+description: |
+  "Support cloud operations such as node testing and system verification"
+tags:
+  - ops
+series:
+  - focal
+subordinate: false

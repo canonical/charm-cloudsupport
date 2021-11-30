@@ -1,0 +1,16 @@
+options:
+  ssl_ca:
+    default: ""
+    type: string
+    description: |
+        TLS CA certficate, to be added as OS_CACERT
+  clouds-yaml:
+    default: ""
+    type: string
+    description: |
+        clouds.yaml
+  ssh-key:
+    default: ''
+    type: string
+    description: |
+      juju ssh key for connectivity tests
