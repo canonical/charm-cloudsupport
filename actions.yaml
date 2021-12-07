@@ -17,14 +17,14 @@ create-test-instance:
       description: add hugepages and cpu pinning if true
   required: [nodes]
 delete-test-instance:
-  description: Delete instances from given nodes matching the name 'bootstack-test-.*' (DANGER! This _will_ wipe your instances without asking for confirmation!)
+  description: Delete instances from given nodes matching the given pattern (DANGER! This _will_ wipe your instances without asking for confirmation!)
   params:
     nodes:
       type: string
       description: Comma-separated node list
     pattern:
       type: string
-      default: ^bootstack-test-.*
+      default: ^cloudsupport-test-.*
       description: instance name regex pattern
   required: [nodes]
 test-connectivity:
@@ -32,4 +32,4 @@ test-connectivity:
   params:
     instance:
       type: string
-      description: Instance to test. Default is to test all "bootstack-test-*" instances
+      description: Instance to test. Default is to test all instances prefixed with "cloudsupport-test"

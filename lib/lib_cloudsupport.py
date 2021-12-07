@@ -10,13 +10,15 @@ import pathlib
 
 from ops.model import ActiveStatus
 
+import os_testing
+
 
 class Paths:
     """Namespace for path constants."""
 
     CLOUDS_YAML = pathlib.Path("/etc/openstack/clouds.yaml")
     CA_FILE = pathlib.Path("ssl_ca.crt")
-    SSH_KEY = pathlib.Path(".ssh/id_rsa_cloudsupport")
+    SSH_KEY = pathlib.Path(os_testing.TEST_SSH_KEY)
 
 
 class CloudSupportHelper:
@@ -29,12 +31,8 @@ class CloudSupportHelper:
 
     def verify_config(self):
         """Verify configurations."""
-        required = {
-            "clouds-yaml",
-            "ssl_ca",
-        }
         logging.debug("verifying config: {}".format(self.charm_config))
-        return required.issubset(self.charm_config)
+        return bool(self.charm_config["clouds-yaml"])
 
     def write_configs(self):
         """Write out config files."""

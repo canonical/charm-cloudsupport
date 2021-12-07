@@ -1,4 +1,4 @@
-"""Test deployment and functionality of the juju-lint charm."""
+"""Test deployment and functionality of the cloudsupport charm."""
 import textwrap
 import unittest
 import urllib
@@ -50,7 +50,7 @@ class TestBase(unittest.TestCase):
         if len(cls.hypervisors) < 1:
             raise Exception("No hypervisors found in test cloud")
         image_attrs = {
-            "name": "bootstack-test-image",
+            "name": "cloudsupport-image",
             "disk_format": "qcow2",
             "container_format": "bare",
             "visibility": "public",
@@ -76,6 +76,9 @@ class CloudSupportTests(TestBase):
         cfg = {
             "clouds-yaml": clouds,
             "ssh-key": priv_key,
+            "ram": "1024",
+            "disk": "2",
+            "cidr": "192.168.77.0/26",
         }
         model.set_application_config(self.app_name, cfg)
         model.block_until_file_has_contents(
@@ -88,7 +91,9 @@ class CloudSupportTests(TestBase):
     def get_test_instances(self):
         """Get instances that look like our test instance."""
         return [
-            s for s in self.nova.servers.list() if s.name.startswith("bootstack-test")
+            s
+            for s in self.nova.servers.list()
+            if s.name.startswith("cloudsupport-test")
         ]
 
     def test_20_create_instance(self):

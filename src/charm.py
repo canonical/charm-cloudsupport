@@ -9,7 +9,6 @@ from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
 
-import os_testing
 from lib_cloudsupport import CloudSupportHelper
 from os_testing import create_instance, delete_instance, test_connectivity
 
@@ -54,21 +53,28 @@ class CloudSupportCharm(CharmBase):
 
     def on_create_test_instance(self, event):
         """Run create-test-instance action."""
+        cfg = self.model.config
         nodes = event.params["nodes"].split(",")
         physnet = event.params.get("physnet")
-        vcpus = event.params.get("vcpus", os_testing.DEFAULT_VCPUS)
+        vcpus = event.params.get("vcpus", cfg["vcpus"])
         vnfspecs = event.params.get("vnfspecs")
         try:
             create_results = create_instance(
-                nodes, physnet=physnet, vcpus=vcpus, vnfspecs=vnfspecs
+                nodes,
+                vcpus,
+                cfg["image"],
+                cfg["name-prefix"],
+                cfg["cidr"],
+                physnet=physnet,
+                vnfspecs=vnfspecs,
             )
         except BaseException as err:
             event.set_results({"error": err})
             raise
-        status = any([a for a in create_results if a[0] == "error"])
+        errs = any([a for a in create_results if a[0] == "error"])
         event.set_results(
             {
-                "create-results": "success" if not status else "error",
+                "create-results": "success" if not errs else "error",
                 "create-details": create_results,
             }
         )
@@ -76,7 +82,7 @@ class CloudSupportCharm(CharmBase):
     def on_delete_test_instance(self, event):
         """Run delete-test-instance action."""
         nodes = event.params["nodes"].split(",")
-        pattern = event.params.get("pattern")
+        pattern = event.params["pattern"]
         delete_results = delete_instance(nodes, pattern)
         event.set_results({"delete-results": delete_results})
 

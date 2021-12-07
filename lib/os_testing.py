@@ -31,36 +31,64 @@ class CloudSupportError(Exception):
     pass
 
 
-DEFAULT_VCPUS = 24
+# Some defaults
+
 DEFAULT_FLAVOR = {
-    "name": "bootstack-test-flavor",
-    "vcpus": DEFAULT_VCPUS,
+    "name": "cloudsupport-test-flavor",
+    "flavorid": "cloudsupport-test-flavor",
+    "vcpus": 24,
     "ram": 4096,
     "disk": 4,
 }
 
-# Some defaults
-TEST_FLAVOR = "bootstack-test-flavor"
-TEST_IMAGE = "bootstack-test-image"
-TEST_NETWORK = "bootstack-test-net"
-TEST_CIDR = "192.168.15.0/24"
-TEST_AGGREGATE = "bootstack-test-agg"
-TEST_SECGROUP = "bootstack-test-secgroup"
+TEST_NETWORK = "cloudsupport-test-net"
+TEST_CIDR = "192.168.99.0/24"
+TEST_AGGREGATE = "cloudsupport-test-agg"
+TEST_SECGROUP = "cloudsupport-test-secgroup"
+TEST_SSH_KEY = ".ssh/id_rsa_cloudsupport"
 
 
 def ensure_net(netname, cidr):
-    """Check if network is present, create it if not."""
-    if con().network.find_network(netname):
-        logging.info("Network %s already present", netname)
-        return
-    net = con().network.create_network(name=netname)
-    con().network.create_subnet(
-        name=netname,
-        network_id=net.id,
-        ip_version="4",
-        cidr=cidr,
-    )
+    """Ensure net with name/cidr is present.
+
+    Will attempt to delete a net if a cidr change is detected.
+
+    :param netname: string network name
+    :param cidr: string network cidr
+    :return: tuple (ok, detail)
+    """
+    candidate = con().network.find_network(netname)
+    if candidate:
+        subnet = con().network.get_subnet(candidate.subnet_ids[0])
+        if subnet.cidr == cidr:
+            logging.info("Network %s (%s) already present", netname, cidr)
+            return True, candidate
+        logging.info(
+            "Found net %s (%s), but want cidr %s, attempt to delete",
+            netname,
+            subnet.cidr,
+            cidr,
+        )
+        try:
+            con().network.delete_network(candidate.id)
+        except openstack.exceptions.ConflictException as detail:
+            msg = "Fault deleting net {}: {}".format(candidate.id, detail)
+            logging.warning(msg)
+            return False, msg
+    try:
+        net = con().network.create_network(name=netname)
+        con().network.create_subnet(
+            name=netname,
+            network_id=net.id,
+            ip_version="4",
+            cidr=cidr,
+        )
+    except openstack.exceptions.ResourceFailure as detail:
+        msg = "Fault creating net or subnet {}: {}".format(netname, detail)
+        logging.warning(msg)
+        return False, msg
     logging.info("Created network %s %s", netname, cidr)
+    return True, net
 
 
 def create_port(netname, physnet=None):
@@ -90,8 +118,8 @@ def create_port(netname, physnet=None):
     return port
 
 
-def ensure_flavor(name, vcpus=DEFAULT_VCPUS, vnfspecs=True):
-    """Check if our testing flavor exists, create it if not.
+def ensure_flavor(name, vcpus, vnfspecs=True):
+    """Re-create test flavor.
 
     :param name: flavor name
     :param vcpus: number of vcpus
@@ -99,17 +127,14 @@ def ensure_flavor(name, vcpus=DEFAULT_VCPUS, vnfspecs=True):
     :return: the flavor
     """
     flavor = con().compute.find_flavor(name)
-    if flavor is not None and vcpus is DEFAULT_VCPUS:
-        logging.info("Flavor %s already present with default vcpus", name)
-        return flavor
     if flavor is not None:
-        logging.info("Recreating flavor %s", flavor)
+        logging.info("Delete flavor %s", flavor)
         con().compute.delete_flavor(flavor)
     flavor_spec = DEFAULT_FLAVOR.copy()
-    flavor_spec["vcpus"] = vcpus
+    flavor_spec.update({"name": name, "flavorid": name, "vcpus": vcpus})
     flavor = con().compute.create_flavor(**flavor_spec)
     extra_specs = {
-        "aggregate_instance_extra_specs:bootstack-test-agg": "true",
+        "aggregate_instance_extra_specs:cloudsupport-test-agg": "true",
     }
     if vnfspecs:
         extra_specs.update(
@@ -134,7 +159,7 @@ def ensure_host_aggregate(agg_name, nodes):
     agg = con().compute.find_aggregate(agg_name)
     if not agg:
         agg = con().compute.create_aggregate(name=agg_name)
-        con().compute.set_aggregate_metadata(agg.id, {"bootstack-test-agg": "true"})
+        con().compute.set_aggregate_metadata(agg.id, {"cloudsupport-test-agg": "true"})
         logging.info("Created %s", agg_name)
     if agg.hosts:
         for node in agg.hosts:
@@ -177,14 +202,13 @@ def ensure_sg_rules(secgroup, tcp_ports=None):
 
 def create_instance(
     nodes,
-    flavor=TEST_FLAVOR,
-    image=TEST_IMAGE,
-    name=None,
+    vcpus,
+    image,
+    name_prefix,
+    cidr,
     network=TEST_NETWORK,
-    cidr=TEST_CIDR,
     physnet=None,
     num_instances=None,
-    vcpus=DEFAULT_VCPUS,
     vnfspecs=True,
 ):
     """Create test instances.
@@ -193,28 +217,28 @@ def create_instance(
     per node given
 
     :param nodes: comma-separated list of nodes to put into the test aggregate
-    :param flavor: name of lavor to use (will be created if missing)
+    :param vcpus: create a flavor with this many vcpus
     :param image: name of image to use, this image must already exist and be usable
-    :param name: instance name, will be generated if missing
+    :param name_prefix: instance name prefix
     :param network: name of network, will be created if missing
     :param cidr: network cidr, a default one will be used if missing
     :param physnet: optional: create an sr-iov port on given physnet
-    :param num_instances: number of instances
-    :param vcpus: create a flavor with this many vcpus
+    :param num_instances: number of instances, defaults to 1 per given node
     :param vnfspecs: flag, use typical VNF specs if given
-    :return: list of results, one per created instance
+    :return: list of list with results
     """
     logging.debug("Creating instance on: %s", nodes)
     ensure_host_aggregate(TEST_AGGREGATE, nodes)
-    ensure_net(network, cidr)
-    flavor = ensure_flavor(flavor, vcpus, vnfspecs)
+    ok, detail = ensure_net(network, cidr)
+    if not ok:
+        return [["error", None, detail]]
+    flavor = ensure_flavor(DEFAULT_FLAVOR["name"], vcpus, vnfspecs)
     sg = ensure_sg_rules(TEST_SECGROUP)
     img = con().image.find_image(image)
     if not img:
         return ["error", "Image not found", image]
-    if not name:
-        ts = datetime.utcnow()
-        name = "bootstack-test-{}".format(ts.strftime("%Y-%m-%dT%H%M"))
+    ts = datetime.utcnow()
+    name = "{}-{}".format(name_prefix, ts.strftime("%Y-%m-%dT%H%M"))
     if num_instances is None:
         num_instances = len(nodes)
     created = []
@@ -242,11 +266,11 @@ def create_instance(
     return created
 
 
-def delete_instance(nodes, pattern="^bootstack-test-.*"):
+def delete_instance(nodes, pattern):
     """Delete instances matching pattern on given nodes.
 
     :param nodes: list of node names
-    :param pattern: instance name pattern, defaults to bootstack-test-.*
+    :param pattern: instance name pattern
     :return: list of deletetion results
     """
     nodes = set(nodes)
@@ -271,16 +295,19 @@ def test_connectivity(instance=None):
     non-sriov ports
 
     :param instance: instance id. If missing, all instances whose names start with
-    "bootstack-test-" will be tested
+    "cloudsupport-test-" will be tested
 
-    :return: list of test results, one entry per instance
+    :return: dictionary with test results, keyed on instance name
     """
     if not instance:
         instances = [
             i.id
             for i in con().compute.servers()
-            if i.name.startswith("bootstack-test-")
+            if i.name.startswith("cloudsupport-test-")
         ]
+        if not instances:
+            logging.warning("No instances found")
+            return {"warning": "No instances found"}
     else:
         instances = [instance]
     net = con().network.find_network(TEST_NETWORK)
@@ -290,7 +317,7 @@ def test_connectivity(instance=None):
         dhcp_agent.host,
         user="ubuntu",
         connect_kwargs={
-            "key_filename": [".ssh/id_rsa_cloudsupport"],
+            "key_filename": [TEST_SSH_KEY],
         },
     )
     results = {}

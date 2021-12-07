@@ -1,4 +1,36 @@
 options:
+  name-prefix:
+    default: "cloudsupport-test"
+    type: string
+    description: |
+        Name prefix to use for test instances
+  cidr:
+    default: "192.168.99.0/24"
+    type: string
+    description: |
+        CIDR of test network to create. Note that changing the cidr will cause the network
+        to be deleted and recreated. It is the operators responsibility to clean up any ports
+        that may linger on the test network prior.
+  image:
+    default: "cloudsupport-image"
+    type: string
+    description: |
+        Image for test instances
+  vcpus:
+    default: 24
+    type: int
+    description: |
+        Default number of vcpus, note this can be overridden per-instance
+  ram:
+    default: 4096
+    type: int
+    description: |
+        Ram for instances
+  disk:
+    default: 4
+    type: int
+    description: |
+        Disk for instances in GB
   ssl_ca:
     default: ""
     type: string
@@ -8,7 +40,7 @@ options:
     default: ""
     type: string
     description: |
-        clouds.yaml
+        clouds.yaml with authentication info
   ssh-key:
     default: ''
     type: string
