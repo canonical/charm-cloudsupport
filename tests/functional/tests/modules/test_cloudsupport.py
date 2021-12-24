@@ -100,7 +100,7 @@ class CloudSupportTests(TestBase):
         """Test: create an instance."""
         res = model.run_action(
             self.unit_name,
-            "create-test-instance",
+            "create-test-instances",
             action_params={
                 "nodes": self.hypervisors[0].hypervisor_hostname,
                 "vcpus": 2,
@@ -124,7 +124,7 @@ class CloudSupportTests(TestBase):
         """Test: delete-instance action, non-matching pattern."""
         res = model.run_action(
             self.unit_name,
-            "delete-test-instance",
+            "delete-test-instances",
             action_params={
                 "nodes": self.hypervisors[0].hypervisor_hostname,
                 "pattern": "nomatchxxxx",
@@ -137,7 +137,7 @@ class CloudSupportTests(TestBase):
         """Test: delete-instance action."""
         res = model.run_action(
             self.unit_name,
-            "delete-test-instance",
+            "delete-test-instances",
             action_params={"nodes": self.hypervisors[0].hypervisor_hostname},
         )
         self.assertEqual(res.status, "completed")

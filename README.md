@@ -14,7 +14,7 @@ Spawn test instances on the given compute node(s). This requires a pre-existing 
 Example:
 
 ```sh
-juju run-action --wait cloudsupport/0 create-test-instance nodes=compute1.maas,compute2.maas vcpus=2 vnfspecs=true physnet=physnet1
+juju run-action --wait cloudsupport/0 create-test-instances nodes=compute1.maas,compute2.maas vcpus=2 vnfspecs=true physnet=physnet1
 ```
 
 
@@ -37,7 +37,7 @@ Will delete instances on nodes. Instance names will be matched against the given
 
 Example - delete instances named 'cloudsupport-test-.*' on compute1 and compute2:
 ```sh
-juju run-action --wait cloudsupport/0 delete-test-instance nodes=compute1.maas,compute2.maas
+juju run-action --wait cloudsupport/0 delete-test-instances nodes=compute1.maas,compute2.maas
 
 ```
 

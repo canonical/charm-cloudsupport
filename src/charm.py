@@ -24,10 +24,10 @@ class CloudSupportCharm(CharmBase):
         self.framework.observe(self.on.install, self.on_install)
         self.framework.observe(self.on.config_changed, self.on_config_changed)
         self.framework.observe(
-            self.on.create_test_instance_action, self.on_create_test_instance
+            self.on.create_test_instances_action, self.on_create_test_instances
         )
         self.framework.observe(
-            self.on.delete_test_instance_action, self.on_delete_test_instance
+            self.on.delete_test_instances_action, self.on_delete_test_instances
         )
         self.framework.observe(
             self.on.test_connectivity_action, self.on_test_connectivity
@@ -51,7 +51,7 @@ class CloudSupportCharm(CharmBase):
             return
         self.helper.update_config()
 
-    def on_create_test_instance(self, event):
+    def on_create_test_instances(self, event):
         """Run create-test-instance action."""
         cfg = self.model.config
         nodes = event.params["nodes"].split(",")
@@ -79,7 +79,7 @@ class CloudSupportCharm(CharmBase):
             }
         )
 
-    def on_delete_test_instance(self, event):
+    def on_delete_test_instances(self, event):
         """Run delete-test-instance action."""
         nodes = event.params["nodes"].split(",")
         pattern = event.params["pattern"]

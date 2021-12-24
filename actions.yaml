@@ -1,4 +1,4 @@
-create-test-instance:
+create-test-instances:
   description: Create a test instance on one or more nodes
   params:
     nodes:
@@ -16,7 +16,7 @@ create-test-instance:
       default: true
       description: add hugepages and cpu pinning if true
   required: [nodes]
-delete-test-instance:
+delete-test-instances:
   description: Delete instances from given nodes matching the given pattern (DANGER! This _will_ wipe your instances without asking for confirmation!)
   params:
     nodes:
