@@ -49,7 +49,7 @@ Deploy this charm with:
 ```sh
 juju deploy cloudsupport
 ```
-Set up OpenStack connection params by providing yaml-formatted string with one cloud named `cloud1`:
+Set up OpenStack connection params by providing yaml-formatted string with one cloud named `cloud1`. For safety it is **strongly** advised to utilize an administrative project, separate from production workload projects.
 
 ```sh
 cat clouds.yaml
