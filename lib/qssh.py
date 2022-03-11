@@ -52,7 +52,7 @@ def get_ssh_command_line(ip, net):
     return cmdline
 
 
-def main(instance, network=None):
+def get_ssh_command_line(instance, network=None):
     srv = con().compute.find_server(instance)
     if not srv:
         raise QsshError("Can't find {}".format(instance))
@@ -70,4 +70,4 @@ if __name__ == "__main__":
     parser.add_argument("--qssh-net", help="connect to instance on this network")
     parser.add_argument("instance", help="instance to connect to")
     args = parser.parse_args()
-    main(args.instance, network=args.qssh_net)
+    get_ssh_command_line(args.instance, network=args.qssh_net)
