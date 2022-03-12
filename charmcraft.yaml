@@ -1,0 +1,18 @@
+# Learn more about charmcraft.yaml configuration at:
+# https://juju.is/docs/sdk/charmcraft-config
+type: "charm"
+bases:
+  - name: "ubuntu"
+    channel: "20.04"
+    architectures:
+      - amd64
+  - name: "ubuntu"
+    channel: "18.04"
+    architectures:
+      - amd64
+parts:
+  charm:
+    charm-python-packages: [setuptools, pip]
+    build-packages: [libffi-dev, rustc, cargo, libssl-dev]
+    prime:
+      - scripts
