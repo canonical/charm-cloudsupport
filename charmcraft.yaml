@@ -12,7 +12,15 @@ bases:
       - amd64
 parts:
   charm:
-    charm-python-packages: [setuptools, pip]
     build-packages: [libffi-dev, rustc, cargo, libssl-dev]
+    charm-binary-python-packages:
+      - setuptools
+      - pip
+      - ops
+      - click
+      #- fabric
+      #- python-openstackclient
+      # for cryptography dependency
+      - setuptools-rust
     prime:
       - scripts
