@@ -24,3 +24,5 @@ parts:
       - setuptools-rust
     prime:
       - scripts
+      - copyright
+      - repo-info
