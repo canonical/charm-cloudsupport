@@ -32,7 +32,16 @@ class CloudSupportCharm(CharmBase):
         self.framework.observe(
             self.on.test_connectivity_action, self.on_test_connectivity
         )
+        self.framework.observe(
+            self.on.nrpe_external_master_relation_joined,
+            self.on_nrpe_external_master_relation_joined,
+        )
+        self.framework.observe(
+            self.on.nrpe_external_master_relation_departed,
+            self.on_nrpe_external_master_relation_departed,
+        )
         self.state.set_default(installed=False)
+        self.state.set_default(nrpe_configured=False)
         self.helper = CloudSupportHelper(self.model)
 
     def on_install(self, event):
@@ -94,6 +103,14 @@ class CloudSupportCharm(CharmBase):
             event.set_results({"error": err})
             raise
         event.set_results(test_results)
+
+    def on_nrpe_external_master_relation_joined(self, event):
+        """Handle nrpe-external-master relation joined."""
+        self.state.nrpe_configured = True
+
+    def on_nrpe_external_master_relation_departed(self, event):
+        """Handle nrpe-external-master relation departed."""
+        self.state.nrpe_configured = False
 
 
 if __name__ == "__main__":

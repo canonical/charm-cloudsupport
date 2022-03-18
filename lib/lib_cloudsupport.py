@@ -8,9 +8,15 @@
 import logging
 import pathlib
 
+from charmhelpers.contrib.charmsupport.nrpe import NRPE
+
 from ops.model import ActiveStatus
 
+import os
 import os_testing
+
+
+NAGIOS_PLUGINS_DIR = "/usr/local/lib/nagios/plugins/"
 
 
 class Paths:
@@ -28,6 +34,15 @@ class CloudSupportHelper:
         """Construct the helper."""
         self.model = model
         self.charm_config = model.config
+
+    @property
+    def plugins_dir(self):
+        """Get nagios plugins directory."""
+        return NAGIOS_PLUGINS_DIR
+
+    @property
+    def check_stale_server(self):
+        return self.charm_config.get("stale_server_check")
 
     def verify_config(self):
         """Verify configurations."""
@@ -57,3 +72,40 @@ class CloudSupportHelper:
             self.model.unit.status = ActiveStatus("Unit is ready")
         else:
             self.model.unit.status = ActiveStatus("Set config values")
+
+        if self.check_stale_server():
+            self.render_nrpe_checks()
+
+    def render_nrpe_checks(self):
+        """Render nrpe checks."""
+        nrpe = NRPE()
+        os.makedirs(self.plugins_dir, exist_ok=True)
+        shortname = "stale_server"
+        check_script = os.path.join(self.plugins_dir, "stale_server_check.py")
+
+        if not self.check_stale_server:
+            nrpe.remove_check(shortname="stale_server")
+            return
+
+        name_prefix = self.charm_config.get("name_prefix")
+        stale_name_prefix = self.charm_config.get("stale_name_prefix")
+        if stale_name_prefix:
+            name_prefix = stale_name_prefix
+        warn_days = self.charm_config.get("stale_warn_days")
+        crit_days = self.charm_config.get("stale_crit_days")
+        project_uuids = self.charm_config.get("stale_project_uuids")
+
+        check_cmd = (
+            "{} --name-prefix {} --warn_days {} --crit_days {}".format(  # NOQA: E501
+                check_script, name_prefix, warn_days, crit_days
+            )
+        )
+
+        if project_uuids:
+            check_cmd = "{} --project_uuids{}".format(check_cmd, project_uuids)
+
+        nrpe.add_check(
+            shortname=shortname,
+            description="Check for stale test servers",
+            check_cmd=check_cmd,
+        )
