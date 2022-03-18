@@ -12,6 +12,7 @@ bases:
       - amd64
 parts:
   charm:
+    source: .
     build-packages:
       # Needed by cryptography
       - libffi-dev
@@ -40,8 +41,8 @@ parts:
       - click
       #- fabric         # currently tarball-only
       #- python-openstackclient  # pulls cryptography dependency before
-                                 # setuptools-rust can be installed
+                                # setuptools-rust can be installed
     prime:
-      - scripts
+      - files
       - copyright
       - repo-info

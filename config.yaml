@@ -49,8 +49,9 @@ options:
   stale_server_check:
     default: False
     type: boolean
-    description: Either enable or disable the stale server check. If it is enabled
-    the stale_project_uuids option is mandatory to be set.
+    description: |
+      Either enable or disable the stale server check. If it is enabled
+      the stale_project_uuids option is mandatory to be set.
   stale_warn_days:
     type: int
     default: 7
@@ -63,15 +64,17 @@ options:
     type: string
     default: ""
     description: |
-        Name prefix to match servers, if not specified the name-prefix from
-        the charm config is taken. This acts as an override specifically for the
-        stale server check.
+      Name prefix to match servers, if not specified the name-prefix from
+      the charm config is taken. This acts as an override specifically for the
+      stale server check.
   stale_project_uuids:
     type: string
     default: ""
-    description: A comma separated list of project UUIDs to check for stale servers.
+    description: |
+      A comma separated list of project UUIDs to check for stale servers.
   stale_ignored_uuids:
     type: string
     default: ""
-    description: A comma separated list of server UUIDs to be ignored/excluded from the stale server check.
+    description: |
+      A comma separated list of server UUIDs to be ignored/excluded from the stale server check.
 
