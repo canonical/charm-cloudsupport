@@ -73,21 +73,26 @@ class CloudSupportHelper:
         else:
             self.model.unit.status = ActiveStatus("Set config values")
 
-        if self.check_stale_server():
+        if self.check_stale_server:
             self.render_nrpe_checks()
+
+    def update_plugins(self):
+        charm_plugin_dir = os.path.join(hookenv.charm_dir(), "files", "plugins/")
+        host.rsync(charm_plugin_dir, self.plugins_dir, options=["--executability"])
 
     def render_nrpe_checks(self):
         """Render nrpe checks."""
         nrpe = NRPE()
         os.makedirs(self.plugins_dir, exist_ok=True)
+        self.update_plugins()
         shortname = "stale_server"
         check_script = os.path.join(self.plugins_dir, "stale_server_check.py")
 
         if not self.check_stale_server:
-            nrpe.remove_check(shortname="stale_server")
+            nrpe.remove_check(shortname=shortname)
             return
 
-        name_prefix = self.charm_config.get("name_prefix")
+        name_prefix = self.charm_config.get("name-prefix")
         stale_name_prefix = self.charm_config.get("stale_name_prefix")
         if stale_name_prefix:
             name_prefix = stale_name_prefix
@@ -109,3 +114,4 @@ class CloudSupportHelper:
             description="Check for stale test servers",
             check_cmd=check_cmd,
         )
+        nrpe.write()
