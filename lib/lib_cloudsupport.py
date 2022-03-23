@@ -8,7 +8,9 @@
 import logging
 import pathlib
 
+from charmhelpers import fetch
 from charmhelpers.contrib.charmsupport.nrpe import NRPE
+from charmhelpers.core import host
 
 from ops.model import ActiveStatus
 
@@ -30,10 +32,11 @@ class Paths:
 class CloudSupportHelper:
     """Cloud support helper object."""
 
-    def __init__(self, model):
+    def __init__(self, model, charm_dir):
         """Construct the helper."""
         self.model = model
         self.charm_config = model.config
+        self.charm_dir = charm_dir
 
     @property
     def plugins_dir(self):
@@ -43,6 +46,9 @@ class CloudSupportHelper:
     @property
     def check_stale_server(self):
         return self.charm_config.get("stale_server_check")
+
+    def install_dependencies(self):
+        fetch.apt_install(["python3-octaviaclient"], fatal=True)
 
     def verify_config(self):
         """Verify configurations."""
@@ -77,7 +83,7 @@ class CloudSupportHelper:
             self.render_nrpe_checks()
 
     def update_plugins(self):
-        charm_plugin_dir = os.path.join(hookenv.charm_dir(), "files", "plugins/")
+        charm_plugin_dir = os.path.join(self.charm_dir, "files", "plugins/")
         host.rsync(charm_plugin_dir, self.plugins_dir, options=["--executability"])
 
     def render_nrpe_checks(self):
