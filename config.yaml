@@ -15,7 +15,7 @@ options:
     default: "cloudsupport-image"
     type: string
     description: |
-        Image for test instances
+        Image for test instances.
   vcpus:
     default: 24
     type: int
@@ -25,17 +25,23 @@ options:
     default: 4096
     type: int
     description: |
-        Ram for instances
+        Default ram size for instances, note this can be overridden per-instance
   disk:
     default: 4
     type: int
     description: |
-        Disk for instances in GB
-  ssl_ca:
+        Default ephemeral disk size for instances in GB, note this can be overridden
+        per-instance
+  ssl-ca:
     default: ""
     type: string
     description: |
         TLS CA certficate, to be added as OS_CACERT
+  cloud-name:
+    default: "cloud1"
+    type: string
+    description: |
+        Name of the cloud as it is configured in clouds.yaml
   clouds-yaml:
     default: ""
     type: string
@@ -46,33 +52,21 @@ options:
     type: string
     description: |
       juju ssh key for connectivity tests
-  stale_server_check:
+  stale-server-check:
     default: False
     type: boolean
     description: |
       Either enable or disable the stale server check. If it is enabled
       the stale_project_uuids option is mandatory to be set.
-  stale_warn_days:
+  stale-warn-days:
     type: int
     default: 7
     description: Days to change check to warning state.
-  stale_crit_days:
+  stale-crit-days:
     type: int
     default: 14
     description: Server overdue days to change check to critical state.
-  stale_name_prefix:
-    type: string
-    default: ""
-    description: |
-      Name prefix to match servers, if not specified the name-prefix from
-      the charm config is taken. This acts as an override specifically for the
-      stale server check.
-  stale_project_uuids:
-    type: string
-    default: ""
-    description: |
-      A comma separated list of project UUIDs to check for stale servers.
-  stale_ignored_uuids:
+  stale-ignored-uuids:
     type: string
     default: ""
     description: |

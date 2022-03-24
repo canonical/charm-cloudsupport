@@ -9,11 +9,16 @@ create-test-instances:
       description: extra SR-IOV physnets to create
     vcpus:
       type: integer
-      default: 24
-      description: number of vcpus to allocate for an instance
+      description: number of vcpus to allocate for an instance. Default to charm config.
+    ram:
+      type: integer
+      description: Ram to allocate for an instance. Default to charm config.
+    disk:
+      type: integer
+      description: Disk for instance's ephemeral disk in GB. Default to charm config.
     vnfspecs:
       type: boolean
-      default: true
+      default: false
       description: add hugepages and cpu pinning if true
   required: [nodes]
 delete-test-instances:

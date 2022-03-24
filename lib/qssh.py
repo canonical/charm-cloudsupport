@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+"""Utility to return one liner command to ssh into an OpenStack instance."""
 
 import argparse
 
@@ -9,7 +10,7 @@ import openstack.exceptions
 
 
 class QsshError(Exception):
-    """An error occured getting info for qssh"""
+    """An error occured getting info for qssh."""
 
     pass
 
@@ -42,7 +43,7 @@ def get_port(srv, network=None):
     return port
 
 
-def get_ssh_command_line(ip, net):
+def build_ssh_command_line(ip, net):
     dhcp_agent = next(con().network.network_hosting_dhcp_agents(net))
     cmdline = (
         """ssh -o 'ProxyCommand=ssh -l ubuntu {} "sudo ip netns exec qdhcp-{} """
@@ -58,7 +59,7 @@ def get_ssh_command_line(instance, network=None):
     port = get_port(srv, network)
     ip = port["fixed_ips"][0]["ip_address"]
     net = con().network.find_network(port["network_id"])
-    cmdline = get_ssh_command_line(ip, net)
+    cmdline = build_ssh_command_line(ip, net)
     print(cmdline)
 
 
