@@ -8,10 +8,10 @@
 import logging
 import os
 import pathlib
+import shutil
 
 from charmhelpers import fetch
 from charmhelpers.contrib.charmsupport.nrpe import NRPE
-from charmhelpers.core import host
 
 from ops.model import ActiveStatus
 
@@ -93,7 +93,10 @@ class CloudSupportHelper:
 
     def update_plugins(self):
         charm_plugin_dir = os.path.join(self.charm_dir, "files", "plugins/")
-        host.rsync(charm_plugin_dir, self.plugins_dir, options=["--executability"])
+        shutil.copy2(
+            os.path.join(charm_plugin_dir, "stale_server_check.py"),
+            os.path.join(self.plugins_dir,"stale_server_check.py")
+        )
 
     def render_nrpe_checks(self):
         """Render nrpe checks."""

@@ -34,7 +34,7 @@ parts:
       # Explicitly included here to avoid doing source-based builds
       # which take time and require installing extra dev packages.
       - setuptools-rust
-      #- cryptography   # note: seems to require a source build on Bionic,
+      - cryptography   # note: seems to require a source build on Bionic,
                         # which in turn requires setuptools-rust to be installed
                         # before attempting to install this.
       - bcrypt
