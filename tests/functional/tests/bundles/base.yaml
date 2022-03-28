@@ -21,6 +21,8 @@ machines:
     constraints: mem=4096M cores=4
   '11':
   '12':
+    series: bionic
+  '13':
 
 applications:
   nagios:
@@ -45,7 +47,8 @@ applications:
     charm: cs:mysql-router
   placement-mysql-router:
     charm: cs:mysql-router
-
+  vault-mysql-router:
+    charm: cs:mysql-router
   mysql-innodb-cluster:
     charm: cs:mysql-innodb-cluster
     num_units: 3
@@ -135,6 +138,11 @@ applications:
       libvirt-image-backend: qcow2
     to:
       - '10'
+  vault:
+    charm: cs:vault
+    num_units: 1
+    to:
+      - '13'
 
 relations:
   - - 'nova-compute:image-service'
@@ -218,3 +226,17 @@ relations:
 
   - - 'nrpe:monitors'
     - 'nagios:monitors'
+  - - 'vault:shared-db'
+    - 'vault-mysql-router:shared-db'
+  - - 'vault-mysql-router:db-router'
+    - 'mysql-innodb-cluster:db-router'
+  - - 'vault:certificates'
+    - 'glance:certificates'
+  - - 'vault:certificates'
+    - 'keystone:certificates'
+  - - 'vault:certificates'
+    - 'neutron-api:certificates'
+  - - 'vault:certificates'
+    - 'nova-cloud-controller:certificates'
+  - - 'vault:certificates'
+    - 'placement:certificates'

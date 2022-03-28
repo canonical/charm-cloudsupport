@@ -2,7 +2,7 @@ PYTHON := /usr/bin/python3
 
 PROJECTPATH=$(dir $(realpath $(MAKEFILE_LIST)))
 ifndef CHARM_BUILD_DIR
-	CHARM_BUILD_DIR=${PROJECTPATH}
+	CHARM_BUILD_DIR=${PROJECTPATH}.build
 endif
 METADATA_FILE="metadata.yaml"
 CHARM_NAME=$(shell cat ${PROJECTPATH}/${METADATA_FILE} | grep -E '^name:' | awk '{print $$2}')
@@ -43,6 +43,9 @@ build:
 	@-git rev-parse --abbrev-ref HEAD > ./repo-info
 	@-git describe --always > ./version
 	@charmcraft -v pack ${BUILD_ARGS}
+	@bash -c ./rename.sh
+	@mkdir -p ${CHARM_BUILD_DIR}/${CHARM_NAME}
+	@unzip ${PROJECTPATH}/${CHARM_NAME}.charm -d ${CHARM_BUILD_DIR}/${CHARM_NAME}
 
 release: clean build unpack
 	@echo "Charms built:"
@@ -73,11 +76,11 @@ unittests:
 
 functional: build
 	@echo "Executing functional tests in ${CHARM_BUILD_DIR}"
-	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} tox -e func
+	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} CHARM_LOCATION=${PROJECTPATH} tox -e func
 
 smoke: build 
 	@echo "Executing smoke tests in ${CHARM_BUILD_DIR}"
-	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} tox -e func-smoke
+	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} CHARM_LOCATION=${PROJECTPATH} tox -e func-smoke
 
 test: lint unittests functional
 	@echo "Tests completed for charm ${CHARM_NAME}."

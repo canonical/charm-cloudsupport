@@ -9,5 +9,9 @@ smoke_bundles:
   - focal
 before_deploy:
 - tests.modules.setup.model_config
-
-
+configure:
+- zaza.openstack.charm_tests.vault.setup.auto_initialize
+target_deploy_status:
+  vault:
+    workload-status: blocked
+    workload-status-message: Vault needs to be initialized
