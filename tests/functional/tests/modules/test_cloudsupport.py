@@ -74,7 +74,7 @@ class CloudSupportTests(TestBase):
     def test_10_configure(self):
         """Test: perform configuration."""
         clouds = gen_clouds_yaml(openstack_utils.get_overcloud_auth())
-        keystone_ca_cert_path = openstack_utils.get_remote_ca_cert_file('keystone')
+        keystone_ca_cert_path = openstack_utils.get_remote_ca_cert_file("keystone")
         with open(keystone_ca_cert_path) as f:
             keystone_ca_cert = f.read()
         priv_key = test_utils.get_priv_key(Path(deployment_env.get_tmpdir()))
@@ -85,7 +85,7 @@ class CloudSupportTests(TestBase):
             "disk": "2",
             "cidr": "192.168.77.0/26",
             "stale-server-check": "true",
-            "ssl-ca": keystone_ca_cert
+            "ssl-ca": keystone_ca_cert,
         }
         model.set_application_config(self.app_name, cfg)
         model.block_until_file_has_contents(

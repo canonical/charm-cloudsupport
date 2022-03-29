@@ -96,7 +96,7 @@ class CloudSupportHelper:
         charm_plugin_dir = os.path.join(self.charm_dir, "files", "plugins/")
         shutil.copy2(
             os.path.join(charm_plugin_dir, "stale_server_check.py"),
-            os.path.join(self.plugins_dir,"stale_server_check.py")
+            os.path.join(self.plugins_dir, "stale_server_check.py"),
         )
 
     def render_nrpe_checks(self):
