@@ -12,7 +12,12 @@ from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus
 
-from os_testing import create_instance, delete_instance, test_connectivity
+from os_testing import (
+    create_instance,
+    delete_instance,
+    get_ssh_oneliner,
+    test_connectivity,
+)
 
 
 class CloudSupportCharm(CharmBase):
@@ -34,6 +39,9 @@ class CloudSupportCharm(CharmBase):
         )
         self.framework.observe(
             self.on.test_connectivity_action, self.on_test_connectivity
+        )
+        self.framework.observe(
+            self.on.get_ssh_oneliner_action, self.on_get_ssh_oneliner
         )
         self.framework.observe(
             self.on.nrpe_external_master_relation_joined,
@@ -74,6 +82,7 @@ class CloudSupportCharm(CharmBase):
         ram = event.params.get("ram", cfg["ram"])
         disk = event.params.get("disk", cfg["disk"])
         vnfspecs = event.params.get("vnfspecs")
+        key_name = event.params.get("key-name", cfg.get("key-name"))
         try:
             create_results = create_instance(
                 nodes,
@@ -85,6 +94,7 @@ class CloudSupportCharm(CharmBase):
                 cfg["cidr"],
                 physnet=physnet,
                 vnfspecs=vnfspecs,
+                key_name=key_name,
                 cloud_name=self.helper.cloud_name,
             )
         except BaseException as err:
@@ -123,6 +133,17 @@ class CloudSupportCharm(CharmBase):
             event.set_results({"error": err})
             raise
         event.set_results(test_results)
+
+    def on_get_ssh_oneliner(self, event):
+        """Run get-ssh-oneliner action."""
+        try:
+            results = get_ssh_oneliner(
+                event.params.get("instance"), cloud_name=self.helper.cloud_name
+            )
+        except BaseException as err:
+            event.set_results({"error": err})
+            raise
+        event.set_results(results)
 
     def on_nrpe_external_master_relation_joined(self, event):
         """Handle nrpe-external-master relation joined."""
