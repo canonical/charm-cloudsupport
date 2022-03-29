@@ -92,6 +92,7 @@ class CloudSupportHelper:
             self.render_nrpe_checks()
 
     def update_plugins(self):
+        """Copy nagios plugin into the unit."""
         charm_plugin_dir = os.path.join(self.charm_dir, "files", "plugins/")
         shutil.copy2(
             os.path.join(charm_plugin_dir, "stale_server_check.py"),
