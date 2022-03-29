@@ -1,3 +1,6 @@
 /build/
 /repo-info
 /version
+/.tox
+/*.charm
+/.idea

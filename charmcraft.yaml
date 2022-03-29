@@ -1,0 +1,53 @@
+# Learn more about charmcraft.yaml configuration at:
+# https://juju.is/docs/sdk/charmcraft-config
+type: "charm"
+bases:
+    - build-on:
+        - name: ubuntu
+          channel: "20.04"
+          architectures: ["amd64"]
+      run-on:
+        - name: ubuntu
+          channel: "20.04"
+          architectures:
+              - amd64
+        - name: ubuntu
+          channel: "18.04"
+          architectures:
+              - amd64
+parts:
+  charm:
+    source: .
+    build-packages:
+      # Needed by cryptography
+      - libffi-dev
+      - rustc
+      - cargo
+      - libssl-dev
+    charm-binary-python-packages:
+      # Updated versions needed for working nicely with
+      # jinja2/markupsafe
+      - setuptools
+      - pip
+
+      # Needed as prerequisites for other required packages.
+      # Explicitly included here to avoid doing source-based builds
+      # which take time and require installing extra dev packages.
+      - setuptools-rust
+      - cryptography   # note: seems to require a source build on Bionic,
+                        # which in turn requires setuptools-rust to be installed
+                        # before attempting to install this.
+      - bcrypt
+      - pynacl          # note: no binary on bionic, but this does help focal
+
+      # Include any of the requirements.txt packages which have wheels
+      #- charmhelpers   # currently tarball-only
+      - ops
+      - click
+      #- fabric         # currently tarball-only
+      #- python-openstackclient  # pulls cryptography dependency before
+                                # setuptools-rust can be installed
+    prime:
+      - files
+      - copyright
+      - repo-info

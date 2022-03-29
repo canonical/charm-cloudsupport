@@ -9,3 +9,9 @@ tags:
 series:
   - focal
 subordinate: false
+provides:
+    nrpe-external-master:
+      interface: nrpe-external-master
+      scope: container
+      optional: true
+

@@ -3,8 +3,10 @@
 import subprocess
 from pathlib import Path
 
-import zaza.utilities.deployment_env as deployment_env
 from tests.modules.test_utils import gen_test_ssh_keys
+
+import zaza.utilities.deployment_env as deployment_env
+
 
 userdata_tmpl = """
 cloudinit-userdata: |

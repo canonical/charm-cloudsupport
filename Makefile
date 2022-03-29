@@ -19,15 +19,16 @@ help:
 	@echo " make lint - run flake8 and black --check"
 	@echo " make black - run black and reformat files"
 	@echo " make proof - run charm proof"
+	@echo " make unittests - run the tests defined in the unittest subdirectory"
 	@echo " make functional - run the tests defined in the functional subdirectory"
-	@echo " make test - run lint, proof, and functional targets"
+	@echo " make test - run lint, unittests and functional targets"
 	@echo ""
 
 clean:
 	@echo "Cleaning files"
 	@git clean -ffXd -e '!.idea'
-	@echo "Cleaning existing build"
-	@rm -rf ${CHARM_BUILD_DIR}/${CHARM_NAME}
+	@charmcraft clean
+	@rm -rf ${PROJECTPATH}/*.charm
 
 submodules:
 	@echo "Cloning submodules"
@@ -38,28 +39,24 @@ submodules-update:
 	@git submodule update --init --recursive --remote --merge
 
 build:
-	@echo "Building charm to base directory ${CHARM_BUILD_DIR}/${CHARM_NAME}"
+	@echo "Building charm"
 	@-git rev-parse --abbrev-ref HEAD > ./repo-info
 	@-git describe --always > ./version
-	@mkdir -p ${CHARM_BUILD_DIR}
-	@tox -e build
-	@mv ${CHARM_NAME}.charm ${CHARM_BUILD_DIR}
-	@echo "Charm can be found at ${CHARM_BUILD_DIR}/${CHARM_NAME}.charm"
-
+	@charmcraft -v pack ${BUILD_ARGS}
+	@bash -c ./rename.sh
+	@mkdir -p ${CHARM_BUILD_DIR}/${CHARM_NAME}
+	@unzip ${PROJECTPATH}/${CHARM_NAME}.charm -d ${CHARM_BUILD_DIR}/${CHARM_NAME}
 
 release: clean build unpack
-	@echo "Charm is built and unpacked at ${CHARM_BUILD_DIR}/${CHARM_NAME}"
+	@echo "Charms built:"
+	@ls -l "${PROJECTPATH}"/*.charm
 
 unpack: build
 	@-rm -rf ${CHARM_BUILD_DIR}/${CHARM_NAME}
 	@mkdir -p ${CHARM_BUILD_DIR}/${CHARM_NAME}
 	@echo "Unpacking built .charm into ${CHARM_BUILD_DIR}/${CHARM_NAME}"
 	@cd ${CHARM_BUILD_DIR}/${CHARM_NAME} && unzip -q ${CHARM_BUILD_DIR}/${CHARM_NAME}.charm
-	# until charmcraft copies READMEs in, we need to publish charms with readmes in them.
-	@cp ${PROJECTPATH}/README.md ${CHARM_BUILD_DIR}/${CHARM_NAME}
-	@cp ${PROJECTPATH}/copyright ${CHARM_BUILD_DIR}/${CHARM_NAME}
-	@cp ${PROJECTPATH}/repo-info ${CHARM_BUILD_DIR}/${CHARM_NAME}
-	@cp ${PROJECTPATH}/version ${CHARM_BUILD_DIR}/${CHARM_NAME}
+	@echo "Charm is unpacked to ${CHARM_BUILD_DIR}/${CHARM_NAME}"
 
 lint:
 	@echo "Running lint checks"
@@ -69,20 +66,24 @@ reformat:
 	@echo "Reformat files with black and isort"
 	@tox -e reformat
 
-proof: unpack
-	@echo "Running charm proof"
-	@charm proof ${CHARM_BUILD_DIR}/${CHARM_NAME}
+proof:
+	# @-charm proof
+	@echo '"proof" target disabled.'
+
+unittests:
+	# @tox -e unit
+	@echo "Skipping unit tests"
 
 functional: build
 	@echo "Executing functional tests in ${CHARM_BUILD_DIR}"
-	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} tox -e func
+	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} CHARM_LOCATION=${PROJECTPATH} tox -e func
 
 smoke: build 
 	@echo "Executing smoke tests in ${CHARM_BUILD_DIR}"
-	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} tox -e func-smoke
+	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} CHARM_LOCATION=${PROJECTPATH} tox -e func-smoke
 
-test: lint proof functional
+test: lint unittests functional
 	@echo "Tests completed for charm ${CHARM_NAME}."
 
 # The targets below don't depend on a file
-.PHONY: help submodules submodules-update clean build release lint black proof functional test unpack
+.PHONY: help submodules submodules-update clean build release lint black proof unittests functional test unpack

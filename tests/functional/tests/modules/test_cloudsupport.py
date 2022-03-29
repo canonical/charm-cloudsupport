@@ -5,9 +5,11 @@ import urllib
 from pathlib import Path
 
 import tenacity
+
+from tests.modules import test_utils
+
 import zaza.openstack.utilities.openstack as openstack_utils
 import zaza.utilities.deployment_env as deployment_env
-from tests.modules import test_utils
 from zaza import model
 
 
@@ -72,6 +74,9 @@ class CloudSupportTests(TestBase):
     def test_10_configure(self):
         """Test: perform configuration."""
         clouds = gen_clouds_yaml(openstack_utils.get_overcloud_auth())
+        keystone_ca_cert_path = openstack_utils.get_remote_ca_cert_file("keystone")
+        with open(keystone_ca_cert_path) as f:
+            keystone_ca_cert = f.read()
         priv_key = test_utils.get_priv_key(Path(deployment_env.get_tmpdir()))
         cfg = {
             "clouds-yaml": clouds,
@@ -79,6 +84,8 @@ class CloudSupportTests(TestBase):
             "ram": "1024",
             "disk": "2",
             "cidr": "192.168.77.0/26",
+            "stale-server-check": "true",
+            "ssl-ca": keystone_ca_cert,
         }
         model.set_application_config(self.app_name, cfg)
         model.block_until_file_has_contents(
@@ -103,7 +110,7 @@ class CloudSupportTests(TestBase):
             "create-test-instances",
             action_params={
                 "nodes": self.hypervisors[0].hypervisor_hostname,
-                "vcpus": 2,
+                "vcpus": 1,
                 "vnfspecs": False,
             },
         )
@@ -152,3 +159,32 @@ class CloudSupportTests(TestBase):
             return test_inst
 
         self.assertFalse(testfunc())
+
+    def test_55_nrpe_check(self):
+        """Verify nrpe check exists."""
+        nagios_plugin = "/usr/local/lib/nagios/plugins/stale_server_check.py"
+        cloud_name = "cloud1"
+        name_prefix = "cloudsupport-test"
+        expected_nrpe_check = (
+            "command[check_stale_server]={} --cloud-name {} --name-prefix {} "
+            "--warn-days 7 --crit-days 14".format(
+                nagios_plugin, cloud_name, name_prefix
+            )
+        )
+
+        cmd = "cat /etc/nagios/nrpe.d/check_stale_server.cfg"
+        result = model.run_on_unit(self.unit_name, cmd)
+        code = result.get("Code")
+        if code != "0":
+            raise model.CommandRunFailed(cmd, result)
+        content = result.get("Stdout")
+        self.assertTrue(expected_nrpe_check in content)
+
+        # Verify it returns ok.
+        cmd = "{} --cloud-name {} --name-prefix {} --warn-days 7 --crit-days 14".format(
+            nagios_plugin, cloud_name, name_prefix
+        )
+        result = model.run_on_unit(self.unit_name, cmd)
+        code = result.get("Code")
+        if code != "0":
+            raise model.CommandRunFailed(cmd, result)

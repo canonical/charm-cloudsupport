@@ -70,7 +70,7 @@ juju config cloudsupport clouds-yaml=@clouds.yaml
 The test-connectivity action needs credentials to connect to compute nodes. Those can be configured by passing in a ssh key:
 
 ```sh
-juju config cloudsupport ssh-key='ssh-rsa ...'
+juju config cloudsupport ssh-key=@~/.local/share/juju/ssh/juju_id_rsa'
 ```
 
 If a CA certificate is required to connect to the OpenStack API it can be provided thusly:
