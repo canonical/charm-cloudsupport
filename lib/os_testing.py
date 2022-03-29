@@ -333,27 +333,57 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
             return {"warning": "No instances found"}
     else:
         instances = [instance]
-    net = con(cloud_name).network.find_network(TEST_NETWORK)
-    dhcp_agent = next(con(cloud_name).network.network_hosting_dhcp_agents(net))
-    logging.debug("Testing conn from: %s", dhcp_agent.host)
-    node = fabric.Connection(
-        dhcp_agent.host,
-        user="ubuntu",
-        connect_kwargs={
-            "key_filename": [TEST_SSH_KEY],
-        },
-    )
+
     results = {}
     for i in instances:
         srv = con(cloud_name).compute.get_server(i)
+        hypervisor_hostname = srv.hypervisor_hostname
+        net = con(cloud_name).network.find_network(TEST_NETWORK)
+        is_ovn = False
+        if (
+            len(
+                list(
+                    con(cloud_name).network.agents(
+                        host=hypervisor_hostname, binary="ovn-controller"
+                    )
+                )
+            )
+            > 0
+        ):
+            is_ovn = True
+        if is_ovn:
+            node = fabric.Connection(
+                hypervisor_hostname,
+                user="ubuntu",
+                connect_kwargs={
+                    "key_filename": [TEST_SSH_KEY],
+                },
+            )
+            net_ns = "ovnmeta"
+            logging.debug("Testing conn from: %s", hypervisor_hostname)
+        else:
+            # is OVS
+            dhcp_agent = next(con(cloud_name).network.network_hosting_dhcp_agents(net))
+            node = fabric.Connection(
+                dhcp_agent.host,
+                user="ubuntu",
+                connect_kwargs={
+                    "key_filename": [TEST_SSH_KEY],
+                },
+            )
+            net_ns = "qdhcp"
+            logging.debug("Testing conn from: %s", dhcp_agent.host)
+
         addr = srv.addresses[TEST_NETWORK][0]["addr"]
         logging.debug("Pinging: %s", addr)
+
         ping_res = node.sudo(
-            "sudo ip netns exec qdhcp-{} ping -c3 -q {}".format(net.id, addr), warn=True
+            "sudo ip netns exec {}-{} ping -c3 -q {}".format(net_ns, net.id, addr),
+            warn=True,
         )
         logging.debug("Ping res: %s", ping_res)
         ssh_res = node.sudo(
-            "sudo ip netns exec qdhcp-{} nc -vzw 3 {} 22".format(net.id, addr),
+            "sudo ip netns exec {}-{} nc -vzw 3 {} 22".format(net_ns, net.id, addr),
             warn=True,
         )
         logging.debug("Nc tcp:22 res: %s", ssh_res)
