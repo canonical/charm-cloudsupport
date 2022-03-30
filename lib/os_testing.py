@@ -376,12 +376,14 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
 
         ping_res = node.sudo(
             "sudo ip netns exec {}-{} ping -c3 -q {}".format(net_ns, net.id, addr),
-            warn=True, hide=True,
+            warn=True,
+            hide=True,
         )
         logging.debug("Ping res: %s", ping_res)
         ssh_res = node.sudo(
             "sudo ip netns exec {}-{} nc -vzw 3 {} 22".format(net_ns, net.id, addr),
-            warn=True, hide=True,
+            warn=True,
+            hide=True,
         )
         logging.debug("Nc tcp:22 res: %s", ssh_res)
         results[i] = {
