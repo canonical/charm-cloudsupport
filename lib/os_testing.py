@@ -52,6 +52,8 @@ TEST_CIDR = "192.168.99.0/24"
 TEST_AGGREGATE = "cloudsupport-test-agg"
 TEST_SECGROUP = "cloudsupport-test-secgroup"
 TEST_SSH_KEY = ".ssh/id_rsa_cloudsupport"
+OVS_NET_NS = "qdhcp"
+OVN_NET_NS = "ovnmeta"
 
 
 def ensure_net(netname, cidr, cloud_name="cloud1"):
@@ -374,12 +376,12 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
 
         if is_ovn:
             host = hypervisor_hostname
-            net_ns = "ovnmeta"
+            net_ns = OVN_NET_NS
         else:
             # is OVS
             dhcp_agent = next(con(cloud_name).network.network_hosting_dhcp_agents(net))
             host = dhcp_agent.host
-            net_ns = "qdhcp"
+            net_ns = OVS_NET_NS
 
         node = fabric.Connection(
             host,
@@ -438,10 +440,11 @@ def get_ssh_cmd(instance=None, cloud_name="cloud1"):
 
         if is_ovn:
             host = hypervisor_hostname
-            net_ns = "ovnmeta"
+            net_ns = OVN_NET_NS
         else:
             host = next(con(cloud_name).network.network_hosting_dhcp_agents(net)).host
-            net_ns = "qdhcp"
+            net_ns = OVS_NET_NS
+
         results[i] = connection_string.format(
             vm_ip=addr, host=host, net_ns=net_ns, net_id=net.id
         )
