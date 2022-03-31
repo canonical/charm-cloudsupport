@@ -20,16 +20,15 @@ juju run-action --wait cloudsupport/0 create-test-instances nodes=compute1.maas,
 
 ## Action: Instance connectivity check
 
-Run a connectivity test against instances. The connectivity test does not require a floating ip address -- it will be run from the net namespace of the qdhcp agent. The test will be run against the first port bound to the test instance. The test will ping the port and attempt a connection to tcp:22 and tcp:80 (note the cloudsupport-image should launch services listening on those). 
+Run a connectivity test against instances. The connectivity test does not require a floating ip address -- it will be run from an appropriate net namespace. The test will be run against the first port bound to the test instance. The test will ping the port and attempt a connection to tcp:22 and tcp:80 (note the cloudsupport-image should launch services listening on those). 
 
-Be aware that due to the use of netns this action will only work against OVS ports.
+This action supports both OVS and OVN deployments.
 
 Example:
 
 ```sh
 juju run-action --wait cloudsupport/0 test-connectivity 
 ```
-
 
 ## Action: Test Instance Deletion
 
@@ -40,8 +39,6 @@ Example - delete instances named 'cloudsupport-test-.*' on compute1 and compute2
 juju run-action --wait cloudsupport/0 delete-test-instances nodes=compute1.maas,compute2.maas
 
 ```
-
-
 
 # Deploy and Configure
 
@@ -66,6 +63,12 @@ clouds:
 
 juju config cloudsupport clouds-yaml=@clouds.yaml
 ```
+Also ensure that the config param `cloud-name` match the name of the cloud in the `clouds-yaml`
+
+i.e. (in this case you won't need this as clouds-yaml is using the default cloud name "cloud1")
+```sh
+juju config cloudsupport cloud-name="cloud1"
+```
 
 The test-connectivity action needs credentials to connect to compute nodes. Those can be configured by passing in a ssh key:
 
@@ -76,9 +79,29 @@ juju config cloudsupport ssh-key=@~/.local/share/juju/ssh/juju_id_rsa'
 If a CA certificate is required to connect to the OpenStack API it can be provided thusly:
 
 ```sh
-juju config cloudsupport ssl_ca='
+juju config cloudsupport ssl-ca='
 -----BEGIN CERTIFICATE-----
 <certificate body>
 -----END CERTIFICATE-----
 '
 ```
+
+## Add nrpe check
+This charm provides an nrpe check to ensure that the VMs deployed with it are not left running on the cloud for more than 
+`stale-warn-days` (this generates a warning) or more than `stale-crit-days` (this generates a critical alert).
+
+To configure it, relate the charm with nrpe 
+
+```sh
+juju add-relation cloudsupport nrpe
+```
+
+and enable the check that is disabled by default
+
+```sh
+juju config cloudsupport stale-server-check=true
+```
+
+Use juju config to tune the `stale-warn-days` (default 7) and the `stale-crit-days` (default 14)
+
+Specific VMs can be ignored when checking for stale servers, adding their uuid to the config param `stale-ignored-uuids`

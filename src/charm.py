@@ -110,8 +110,14 @@ class CloudSupportCharm(CharmBase):
     def on_test_connectivity(self, event):
         """Run test-connectivity action."""
         try:
+            # workaround for old juju
+            # on 2.7.x params is None when nothing is passed.
+            if not event.params:
+                instance = None
+            else:
+                instance = event.params.get("instance")
             test_results = test_connectivity(
-                event.params.get("instance"), cloud_name=self.helper.cloud_name
+                instance, cloud_name=self.helper.cloud_name
             )
         except BaseException as err:
             event.set_results({"error": err})
