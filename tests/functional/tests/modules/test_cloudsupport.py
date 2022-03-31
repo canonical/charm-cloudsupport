@@ -1,5 +1,6 @@
 """Test deployment and functionality of the cloudsupport charm."""
 import textwrap
+import time
 import unittest
 import urllib
 from pathlib import Path
@@ -42,6 +43,7 @@ class TestBase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """Run setup for tests."""
+        time.sleep(120)  # Add some sleep to ensure overcloud is ready.
         cls.model_name = model.get_juju_model()
         cls.app_name = "cloudsupport"
         cls.unit_name = "cloudsupport/0"
@@ -121,6 +123,7 @@ class CloudSupportTests(TestBase):
 
     def test_25_test_connectivity(self):
         """Test: connectivity of an instance."""
+        time.sleep(20)  # Make sure the VM has booted.
         res = model.run_action(
             self.unit_name,
             "test-connectivity",

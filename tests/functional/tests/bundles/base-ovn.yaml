@@ -124,11 +124,6 @@ applications:
       ephemeral-device: '40G'
     options:
       openstack-origin: *openstack-origin
-      config-flags: auto_assign_floating_ip=False
-      enable-live-migration: false
-      aa-profile-mode: enforce
-      debug: true
-      libvirt-image-backend: qcow2
     to:
       - '9'
   vault:
