@@ -445,7 +445,7 @@ def get_ssh_cmd(instance=None, cloud_name="cloud1"):
             host = next(con(cloud_name).network.network_hosting_dhcp_agents(net)).host
             net_ns = OVS_NET_NS
 
-        results[i] = connection_string.format(
+        results[i] = "\n" + connection_string.format(
             vm_ip=addr, host=host, net_ns=net_ns, net_id=net.id
         )
 
