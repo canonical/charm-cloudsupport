@@ -1,16 +1,18 @@
 """This module contains methods to run OpenStack commands."""
-
 import logging
 import os
 import re
+import warnings
 from datetime import datetime
 
-import fabric
+from cryptography.utils import CryptographyDeprecationWarning
 
-import openstack
-import openstack.exceptions
+warnings.filterwarnings("ignore", category=CryptographyDeprecationWarning)
 
-# openstack.enable_logging(debug=True)
+import fabric  # noqa: E402
+
+import openstack  # noqa: E402
+import openstack.exceptions  # noqa: E402
 
 _con = None
 
@@ -333,28 +335,55 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
             return {"warning": "No instances found"}
     else:
         instances = [instance]
-    net = con(cloud_name).network.find_network(TEST_NETWORK)
-    dhcp_agent = next(con(cloud_name).network.network_hosting_dhcp_agents(net))
-    logging.debug("Testing conn from: %s", dhcp_agent.host)
-    node = fabric.Connection(
-        dhcp_agent.host,
-        user="ubuntu",
-        connect_kwargs={
-            "key_filename": [TEST_SSH_KEY],
-        },
-    )
+
     results = {}
     for i in instances:
         srv = con(cloud_name).compute.get_server(i)
+        hypervisor_hostname = srv.hypervisor_hostname
+        net = con(cloud_name).network.find_network(TEST_NETWORK)
+        is_ovn = False
+        if (
+            len(
+                list(
+                    con(cloud_name).network.agents(
+                        host=hypervisor_hostname, binary="ovn-controller"
+                    )
+                )
+            )
+            > 0
+        ):
+            is_ovn = True
+        if is_ovn:
+            host = hypervisor_hostname
+            net_ns = "ovnmeta"
+        else:
+            # is OVS
+            dhcp_agent = next(con(cloud_name).network.network_hosting_dhcp_agents(net))
+            host = dhcp_agent.host
+            net_ns = "qdhcp"
+
+        node = fabric.Connection(
+            host,
+            user="ubuntu",
+            connect_kwargs={
+                "key_filename": [TEST_SSH_KEY],
+            },
+        )
+        logging.debug("Testing conn from: %s", host)
+
         addr = srv.addresses[TEST_NETWORK][0]["addr"]
         logging.debug("Pinging: %s", addr)
+
         ping_res = node.sudo(
-            "sudo ip netns exec qdhcp-{} ping -c3 -q {}".format(net.id, addr), warn=True
+            "sudo ip netns exec {}-{} ping -c3 -q {}".format(net_ns, net.id, addr),
+            warn=True,
+            hide=True,
         )
         logging.debug("Ping res: %s", ping_res)
         ssh_res = node.sudo(
-            "sudo ip netns exec qdhcp-{} nc -vzw 3 {} 22".format(net.id, addr),
+            "sudo ip netns exec {}-{} nc -vzw 3 {} 22".format(net_ns, net.id, addr),
             warn=True,
+            hide=True,
         )
         logging.debug("Nc tcp:22 res: %s", ssh_res)
         results[i] = {
