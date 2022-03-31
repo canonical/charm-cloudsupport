@@ -32,6 +32,11 @@ options:
     description: |
         Default ephemeral disk size for instances in GB, note this can be overridden
         per-instance
+  key-name:
+    type: string
+    description: |
+        Name of an associated Nova keypair to pass when creating an instance, note
+        this can be overridden per-instance.
   ssl-ca:
     default: ""
     type: string

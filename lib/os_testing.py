@@ -52,6 +52,8 @@ TEST_CIDR = "192.168.99.0/24"
 TEST_AGGREGATE = "cloudsupport-test-agg"
 TEST_SECGROUP = "cloudsupport-test-secgroup"
 TEST_SSH_KEY = ".ssh/id_rsa_cloudsupport"
+OVS_NET_NS = "qdhcp"
+OVN_NET_NS = "ovnmeta"
 
 
 def ensure_net(netname, cidr, cloud_name="cloud1"):
@@ -229,6 +231,7 @@ def create_instance(
     physnet=None,
     num_instances=None,
     vnfspecs=True,
+    key_name=None,
     cloud_name="cloud1",
 ):
     """Create test instances.
@@ -245,6 +248,7 @@ def create_instance(
     :param physnet: optional: create an sr-iov port on given physnet
     :param num_instances: number of instances, defaults to 1 per given node
     :param vnfspecs: flag, use typical VNF specs if given
+    :param key_name: string keypair name to pass to instance creation
     :param cloud_name: string cloud name to select auth info in clouds.yaml
     :return: list of list with results
     """
@@ -269,12 +273,18 @@ def create_instance(
         ports = [create_port(network, cloud_name=cloud_name)]
         if physnet:
             ports.append(create_port(network, physnet, cloud_name=cloud_name))
+
+        optional_params = {}
+        if key_name:
+            optional_params["key_name"] = key_name
+
         server = con(cloud_name).compute.create_server(
             name=name,
             image_id=img.id,
             flavor_id=flavor.id,
             networks=[{"port": p.id} for p in ports],
             wait=True,
+            **optional_params
         )
         logging.debug("Spawn instance: %s", server)
         try:
@@ -295,7 +305,7 @@ def delete_instance(nodes, pattern, cloud_name="cloud1"):
     :param nodes: list of node names
     :param pattern: instance name pattern
     :param cloud_name: string cloud name to select auth info in clouds.yaml
-    :return: list of deletetion results
+    :return: list of deletion results
     """
     nodes = set(nodes)
     pat = re.compile(pattern)
@@ -312,18 +322,7 @@ def delete_instance(nodes, pattern, cloud_name="cloud1"):
     return results
 
 
-def test_connectivity(instance=None, cloud_name="cloud1"):
-    """Test connectivity to instance(s).
-
-    The test will ping and connect to tcp:22 and tcp:80 from the qdhcp netns towards the
-    non-sriov ports
-
-    :param instance: instance id. If missing, all instances whose names start with
-    :param cloud_name: string cloud name to select auth info in clouds.yaml
-    "cloudsupport-test-" will be tested
-
-    :return: dictionary with test results, keyed on instance name
-    """
+def get_instances(instance=None, cloud_name="cloud1"):
     if not instance:
         instances = [
             i.id
@@ -335,32 +334,54 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
             return {"warning": "No instances found"}
     else:
         instances = [instance]
+    return instances
+
+
+def is_ovn_used(hypervisor_hostname, cloud_name="cloud1"):
+    if (
+        len(
+            list(
+                con(cloud_name).network.agents(
+                    host=hypervisor_hostname, binary="ovn-controller"
+                )
+            )
+        )
+        > 0
+    ):
+        return True
+
+    return False
+
+
+def test_connectivity(instance=None, cloud_name="cloud1"):
+    """Test connectivity to instance(s).
+
+    The test will ping and connect to tcp:22 and tcp:80 from the qdhcp netns towards the
+    non-sriov ports
+
+    :param instance: instance id. If missing, all instances whose names start with
+    :param cloud_name: string cloud name to select auth info in clouds.yaml
+    "cloudsupport-test-" will be tested
+
+    :return: dictionary with test results, keyed on instances' UUIDs
+    """
+    instances = get_instances(instance=instance, cloud_name=cloud_name)
 
     results = {}
     for i in instances:
         srv = con(cloud_name).compute.get_server(i)
         hypervisor_hostname = srv.hypervisor_hostname
         net = con(cloud_name).network.find_network(TEST_NETWORK)
-        is_ovn = False
-        if (
-            len(
-                list(
-                    con(cloud_name).network.agents(
-                        host=hypervisor_hostname, binary="ovn-controller"
-                    )
-                )
-            )
-            > 0
-        ):
-            is_ovn = True
+        is_ovn = is_ovn_used(hypervisor_hostname, cloud_name=cloud_name)
+
         if is_ovn:
             host = hypervisor_hostname
-            net_ns = "ovnmeta"
+            net_ns = OVN_NET_NS
         else:
             # is OVS
             dhcp_agent = next(con(cloud_name).network.network_hosting_dhcp_agents(net))
             host = dhcp_agent.host
-            net_ns = "qdhcp"
+            net_ns = OVS_NET_NS
 
         node = fabric.Connection(
             host,
@@ -390,6 +411,44 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
             "ping": "{}\n{}".format(ping_res.stdout, ping_res.stderr),
             "ssh": "{}\n{}".format(ssh_res.stdout, ssh_res.stderr),
         }
+    return results
+
+
+def get_ssh_cmd(instance=None, cloud_name="cloud1"):
+    """Get ssh cmd to connect to the instance.
+
+    :param instance: instance id. If missing, all instances whose names start with
+    "cloudsupport-test-" will be tested
+    :param cloud_name: string cloud name to select auth info in clouds.yaml
+
+    :return: dictionary with ssh cmds, keyed on instances' UUIDs
+    """
+    instances = get_instances(instance=instance, cloud_name=cloud_name)
+    connection_string = (
+        "ssh ubuntu@{vm_ip} "
+        '-o ProxyCommand="juju ssh {host} '
+        'sudo ip netns exec {net_ns}-{net_id} nc %h %p"'
+    )
+    results = {}
+    for i in instances:
+        srv = con(cloud_name).compute.get_server(i)
+        hypervisor_hostname = srv.hypervisor_hostname
+        net = con(cloud_name).network.find_network(TEST_NETWORK)
+        addr = srv.addresses[TEST_NETWORK][0]["addr"]
+
+        is_ovn = is_ovn_used(hypervisor_hostname, cloud_name=cloud_name)
+
+        if is_ovn:
+            host = hypervisor_hostname
+            net_ns = OVN_NET_NS
+        else:
+            host = next(con(cloud_name).network.network_hosting_dhcp_agents(net)).host
+            net_ns = OVS_NET_NS
+
+        results[i] = "\n" + connection_string.format(
+            vm_ip=addr, host=host, net_ns=net_ns, net_id=net.id
+        )
+
     return results
 
 
