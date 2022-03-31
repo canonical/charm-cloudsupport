@@ -40,9 +40,7 @@ class CloudSupportCharm(CharmBase):
         self.framework.observe(
             self.on.test_connectivity_action, self.on_test_connectivity
         )
-        self.framework.observe(
-            self.on.get_ssh_cmd_action, self.on_get_ssh_cmd
-        )
+        self.framework.observe(self.on.get_ssh_cmd_action, self.on_get_ssh_cmd)
         self.framework.observe(
             self.on.nrpe_external_master_relation_joined,
             self.on_nrpe_external_master_relation_joined,
