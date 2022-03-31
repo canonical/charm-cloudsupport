@@ -15,7 +15,7 @@ from ops.model import ActiveStatus
 from os_testing import (
     create_instance,
     delete_instance,
-    get_ssh_oneliner,
+    get_ssh_cmd,
     test_connectivity,
 )
 
@@ -41,7 +41,7 @@ class CloudSupportCharm(CharmBase):
             self.on.test_connectivity_action, self.on_test_connectivity
         )
         self.framework.observe(
-            self.on.get_ssh_oneliner_action, self.on_get_ssh_oneliner
+            self.on.get_ssh_cmd_action, self.on_get_ssh_cmd
         )
         self.framework.observe(
             self.on.nrpe_external_master_relation_joined,
@@ -134,12 +134,16 @@ class CloudSupportCharm(CharmBase):
             raise
         event.set_results(test_results)
 
-    def on_get_ssh_oneliner(self, event):
-        """Run get-ssh-oneliner action."""
+    def on_get_ssh_cmd(self, event):
+        """Run get-ssh-cmd action."""
         try:
-            results = get_ssh_oneliner(
-                event.params.get("instance"), cloud_name=self.helper.cloud_name
-            )
+            # workaround for old juju
+            # on 2.7.x params is None when nothing is passed.
+            if not event.params:
+                instance = None
+            else:
+                instance = event.params.get("instance")
+            results = get_ssh_cmd(instance, cloud_name=self.helper.cloud_name)
         except BaseException as err:
             event.set_results({"error": err})
             raise

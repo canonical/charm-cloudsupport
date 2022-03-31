@@ -130,6 +130,14 @@ class CloudSupportTests(TestBase):
         )
         self.assertEqual(res.status, "completed")
 
+    def test_35_test_get_ssh_cmd(self):
+        """Verify get-ssh-cmd action complete successfully."""
+        res = model.run_action(
+            self.unit_name,
+            "get-ssh-cmd",
+        )
+        self.assertEqual(res.status, "completed")
+
     def test_45_delete_instance_no_match(self):
         """Test: delete-instance action, non-matching pattern."""
         res = model.run_action(

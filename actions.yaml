@@ -18,7 +18,7 @@ create-test-instances:
       description: Disk for instance's ephemeral disk in GB. Default to charm config.
     key-name:
       type: string
-      description: Name of an associated keypair. Default to charm config.
+      description: Name of an associated Nova keypair. Default to charm config.
     vnfspecs:
       type: boolean
       default: false
@@ -41,9 +41,9 @@ test-connectivity:
     instance:
       type: string
       description: Instance to test. Default is to test all instances prefixed with "cloudsupport-test"
-get-ssh-oneliner:
-  description: Return ssh oneliner to access instances.
+get-ssh-cmd:
+  description: Return ssh cmd to access test instances.
   params:
     instance:
       type: string
-      description: Instance to get the ssh oneliner. Default is to get it for all instances prefixed with "cloudsupport-test"
+      description: Instance to get the ssh cmd. Default is to get it for all instances prefixed with "cloudsupport-test"

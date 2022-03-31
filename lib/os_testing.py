@@ -303,7 +303,7 @@ def delete_instance(nodes, pattern, cloud_name="cloud1"):
     :param nodes: list of node names
     :param pattern: instance name pattern
     :param cloud_name: string cloud name to select auth info in clouds.yaml
-    :return: list of deletetion results
+    :return: list of deletion results
     """
     nodes = set(nodes)
     pat = re.compile(pattern)
@@ -361,7 +361,7 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
     :param cloud_name: string cloud name to select auth info in clouds.yaml
     "cloudsupport-test-" will be tested
 
-    :return: dictionary with test results, keyed on instance name
+    :return: dictionary with test results, keyed on instances' UUIDs
     """
     instances = get_instances(instance=instance, cloud_name=cloud_name)
 
@@ -412,14 +412,14 @@ def test_connectivity(instance=None, cloud_name="cloud1"):
     return results
 
 
-def get_ssh_oneliner(instance=None, cloud_name="cloud1"):
-    """Get ssh one liner to connect to the instance.
+def get_ssh_cmd(instance=None, cloud_name="cloud1"):
+    """Get ssh cmd to connect to the instance.
 
     :param instance: instance id. If missing, all instances whose names start with
-    :param cloud_name: string cloud name to select auth info in clouds.yaml
     "cloudsupport-test-" will be tested
+    :param cloud_name: string cloud name to select auth info in clouds.yaml
 
-    :return: dictionary with ssh cmdlines, keyed on instance name
+    :return: dictionary with ssh cmds, keyed on instances' UUIDs
     """
     instances = get_instances(instance=instance, cloud_name=cloud_name)
     connection_string = (

@@ -40,6 +40,21 @@ juju run-action --wait cloudsupport/0 delete-test-instances nodes=compute1.maas,
 
 ```
 
+## Action: Get ssh cmd
+
+Get ssh cmd to connect to test instances. 
+If you have specified a `key-name` when creating the instances, you should have passwordless ssh using the printed cmds.
+
+```sh
+juju run-action --wait cloudsupport/0 get-ssh-cmd --wait
+```
+
+Optionally you can pass an instance UUID in this case the action will get the ssh cmd only for the given instance:
+```sh
+juju run-action --wait cloudsupport/0 get-ssh-cmd instance="3be0c29e-0299-44bb-9b0f-f9f35cab39ee" --wait
+```
+
+
 # Deploy and Configure
 
 Deploy this charm with:

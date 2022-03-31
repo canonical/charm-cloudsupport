@@ -35,7 +35,7 @@ options:
   key-name:
     type: string
     description: |
-        Default name of an associated keypair to pass when creating an instance, note
+        Name of an associated Nova keypair to pass when creating an instance, note
         this can be overridden per-instance.
   ssl-ca:
     default: ""
