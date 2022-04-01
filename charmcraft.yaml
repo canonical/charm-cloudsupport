@@ -50,4 +50,3 @@ parts:
     prime:
       - files
       - copyright
-      - repo-info
