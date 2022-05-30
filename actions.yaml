@@ -47,3 +47,51 @@ get-ssh-cmd:
     instance:
       type: string
       description: Instance to get the ssh cmd. Default is to get it for all instances prefixed with "cloudsupport-test"
+stop-vms:
+  description: |
+    Stop all running VMs on provided compute node. This action requires that
+    compute-node to be disabled on this unit.
+    WARNING: this option can be dangerous
+  properties:
+    compute-node:
+      type: string
+      description: Compute-node name registered in cloud.
+    i-really-mean-it:
+      type: boolean
+      description: |
+        This must be toggled to enable actually performing this action
+    cloud-name:
+      type: string
+      description: |
+        The name of the cloud from the `clouds-yaml` configuration. The default value
+        is `cloud-name` option from config.
+  required:
+    - compute-node
+    - i-really-mean-it
+start-vms:
+  description: |
+    Start all stopped VMs that were stopped with the `stop` action on provided
+    compute node. If the VM failed to start, it needs to be started manually
+    (recommended) or run this action with `--force-all`.
+  properties:
+    compute-node:
+      type: string
+      description: Compute-node name registered in cloud.
+    i-really-mean-it:
+      type: boolean
+      description: |
+        This must be toggled to enable actually performing this action
+    cloud-name:
+      type: string
+      description: |
+        The name of the cloud from the `clouds-yaml` configuration. The default value
+        is `cloud-name` option from config.
+    force-all:
+      type: boolean
+      default: False
+      description: |
+        Forced start of all compute services, not only those that were stopped
+        by the `stop` action.
+  required:
+    - compute-node
+    - i-really-mean-it

@@ -13,6 +13,7 @@ from ops.main import main
 from ops.model import ActiveStatus
 
 from os_testing import (
+    CloudSupportError,
     create_instance,
     delete_instance,
     get_ssh_cmd,
@@ -41,6 +42,8 @@ class CloudSupportCharm(CharmBase):
             self.on.test_connectivity_action, self.on_test_connectivity
         )
         self.framework.observe(self.on.get_ssh_cmd_action, self.on_get_ssh_cmd)
+        self.framework.observe(self.on.stop_vms_action, self.on_stop_vms)
+        self.framework.observe(self.on.start_vms_action, self.on_start_vms)
         self.framework.observe(
             self.on.nrpe_external_master_relation_joined,
             self.on_nrpe_external_master_relation_joined,
@@ -49,8 +52,7 @@ class CloudSupportCharm(CharmBase):
             self.on.nrpe_external_master_relation_departed,
             self.on_nrpe_external_master_relation_departed,
         )
-        self.state.set_default(installed=False)
-        self.state.set_default(nrpe_configured=False)
+        self.state.set_default(installed=False, nrpe_configured=False, stopped_vms=[])
         self.helper = CloudSupportHelper(self.model, self.charm_dir)
         self.unit.status = ActiveStatus("Unit is ready")
 
@@ -147,6 +149,50 @@ class CloudSupportCharm(CharmBase):
             event.set_results({"error": err})
             raise
         event.set_results(results)
+
+    def _verify_stop_start_event(self, event):
+        """Verify requirements of stop-vms/start-vms action."""
+        if not event.params.get("i-really-mean-it"):
+            event.fail("i-really-mean-it is a required parameter")
+            return False
+        if not event.params.get("compute-node"):
+            event.fail("parameter compute-node is missing")
+            return False
+        return True
+
+    def on_stop_vms(self, event):
+        """Run stop-vms action."""
+        if not self._verify_stop_start_event(event):
+            return
+        cloud_name = event.params.get("cloud-name")
+        compute_node = event.params.get("compute-node")
+        try:
+            stopped_vms, failed_to_stop = self.helper.stop_vms(compute_node, cloud_name)
+        except CloudSupportError as error:
+            event.fail(str(error))
+            return
+        self.state.stopped_vms = stopped_vms  # stored IDs of all stopped VMs
+        event.set_results(
+            {
+                "stopped-vms": stopped_vms,
+                "failed-to-stop": failed_to_stop,
+            }
+        )
+
+    def on_start_vms(self, event):
+        """Run start-vms action."""
+        if not self._verify_stop_start_event(event):
+            return
+        cloud_name = event.params.get("cloud-name")
+        compute_node = event.params.get("compute-node")
+        force_all = event.params.get("force-all")
+        started_vms, failed_to_start = self.helper.start_vms(
+            compute_node, self.state.stopped_vms if not force_all else None, cloud_name
+        )
+        self.state.stopped_vms = []  # clear stored IDs
+        event.set_results(
+            {"started-vms": started_vms, "failed-to-start": failed_to_start}
+        )
 
     def on_nrpe_external_master_relation_joined(self, event):
         """Handle nrpe-external-master relation joined."""

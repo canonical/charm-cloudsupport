@@ -71,8 +71,8 @@ proof:
 	@echo '"proof" target disabled.'
 
 unittests:
-	# @tox -e unit
-	@echo "Skipping unit tests"
+	@echo "Executing unittests in ${CHARM_BUILD_DIR}"
+	@tox -e unit
 
 functional: build
 	@echo "Executing functional tests in ${CHARM_BUILD_DIR}"

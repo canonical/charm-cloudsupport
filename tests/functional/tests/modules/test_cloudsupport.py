@@ -133,12 +133,44 @@ class CloudSupportTests(CloudSupportBaseTest):
         result = self.run_action_on_unit("test-connectivity")
         self.assertEqual(result.status, "completed")
 
-    def test_35_test_get_ssh_cmd(self):
+    def test_30_stop_vms(self):
+        """Test: stop all VMs."""
+        host = self.hypervisors[0].hypervisor_hostname
+        # test run action stop-vms with enabled nova-compute
+        result = self.run_action_on_unit(
+            "stop-vms",
+            **{"i-really-mean-it": True, "compute-node": host},
+        )
+        self.assertEqual(result.status, "failed")
+        self.assertEqual(
+            result.message,
+            "nova-compute service is not disabled on host `{}`".format(host),
+        )
+        # test run action stop-vms with disabled nova-compute
+        model.run_action("nova-compute/0", "disable")  # disable compute node
+        result = self.run_action_on_unit(
+            "stop-vms",
+            **{"i-really-mean-it": True, "compute-node": host},
+        )
+        self.assertEqual(result.status, "completed")
+        model.run_action("nova-compute/0", "enable")  # enable compute node
+
+    def test_35_start_vms(self):
+        """Test: start all stopped VMs."""
+        host = self.hypervisors[0].hypervisor_hostname
+        # test run action start-vms
+        result = self.run_action_on_unit(
+            "start-vms",
+            **{"i-really-mean-it": True, "compute-node": host},
+        )
+        self.assertEqual(result.status, "completed")
+
+    def test_40_test_get_ssh_cmd(self):
         """Verify get-ssh-cmd action complete successfully."""
         result = self.run_action_on_unit("get-ssh-cmd")
         self.assertEqual(result.status, "completed")
 
-    def test_45_delete_instance_no_match(self):
+    def test_50_delete_instance_no_match(self):
         """Test: delete-instance action, non-matching pattern."""
         result = self.run_action_on_unit(
             "delete-test-instances",
@@ -148,7 +180,7 @@ class CloudSupportTests(CloudSupportBaseTest):
         self.assertEqual(result.status, "completed")
         self.assertTrue(self.get_test_instances())
 
-    def test_50_delete_instance(self):
+    def test_60_delete_instance(self):
         """Test: delete-instance action."""
         result = self.run_action_on_unit(
             "delete-test-instances",
@@ -163,7 +195,7 @@ class CloudSupportTests(CloudSupportBaseTest):
 
         self.assertFalse(self.get_test_instances())  # test that the list is empty
 
-    def test_55_nrpe_check(self):
+    def test_65_nrpe_check(self):
         """Verify nrpe check exists."""
         nagios_plugin = "/usr/local/lib/nagios/plugins/stale_server_check.py"
         cloud_name = "cloud1"

@@ -13,9 +13,12 @@ import shutil
 from charmhelpers import fetch
 from charmhelpers.contrib.charmsupport.nrpe import NRPE
 
+from openstack.exceptions import SDKException
+
 from ops.model import ActiveStatus
 
 import os_testing
+from os_testing import CloudSupportError, con
 
 NAGIOS_PLUGINS_DIR = "/usr/local/lib/nagios/plugins/"
 
@@ -132,3 +135,61 @@ class CloudSupportHelper:
             check_cmd=check_cmd,
         )
         nrpe.write()
+
+        return False
+
+    def _check_compute_node_service(self, cloud_name, compute_node, status=None):
+        """Check if compute-node service exists.
+
+        If a status is specified, it will be checked.
+        """
+        for service in con(cloud_name).compute.services():
+            if service.binary == "nova-compute" and service.host == compute_node:
+                if status is None or service.status == status:
+                    return True
+
+        return False
+
+    def stop_vms(self, compute_node, cloud_name=None):
+        """Stop all VMs on compute node."""
+        stopped_vms = []
+        failed_to_stop = []
+        cloud_name = cloud_name or self.cloud_name
+        if not self._check_compute_node_service(cloud_name, compute_node, "disabled"):
+            raise CloudSupportError(
+                "nova-compute service is not disabled on host "
+                "`{}`".format(compute_node)
+            )
+        vms = con(cloud_name).compute.servers(
+            host=compute_node, all_tenants=True, status="ACTIVE"
+        )
+        for vm in vms:
+            try:
+                logging.debug("stopping VM: %s(%s)", vm.name, vm.id)
+                con(cloud_name).compute.stop_server(vm.id)
+                stopped_vms.append(vm.id)
+            except SDKException as error:
+                logging.warning("failed to stop VM %s with error: %s", vm.id, error)
+                failed_to_stop.append(vm.id)
+        return stopped_vms, failed_to_stop
+
+    def start_vms(self, compute_node, stopped_vms=None, cloud_name=None):
+        """Start all VMs on compute node."""
+        started_vms = []
+        failed_to_start = []
+        cloud_name = cloud_name or self.cloud_name
+        vms = con(cloud_name).compute.servers(
+            host=compute_node, all_tenants=True, status="SHUTOFF"
+        )
+        for vm in vms:
+            if stopped_vms is not None and vm.id not in stopped_vms:
+                # skip all VMs that have not been stopped
+                continue
+            try:
+                logging.debug("starting VM: %s(%s)", vm.name, vm.id)
+                con(cloud_name).compute.start_server(vm.id)
+                started_vms.append(vm.id)
+            except SDKException as error:
+                logging.warning("failed to start VM %s with error: %s", vm.id, error)
+                failed_to_start.append(vm.id)
+        return started_vms, failed_to_start
