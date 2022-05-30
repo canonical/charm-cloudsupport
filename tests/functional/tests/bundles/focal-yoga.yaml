@@ -1,6 +1,8 @@
 variables:
   openstack-origin: &openstack-origin distro
 
+series: focal
+
 comment:
 - 'machines section to decide order of deployment. database sooner = faster'
 machines:
@@ -17,45 +19,49 @@ machines:
   '7':
   '8':
   '9':
-    constraints: mem=4096M cores=4
   '10':
+    constraints: mem=4096M cores=4
   '11':
   '12':
     series: bionic
   '13':
-    constraints: mem=3072M
-  '14':
-    constraints: mem=3072M
-  '15':
-    constraints: mem=3072M
 
 applications:
   nagios:
-    charm: cs:nagios
+    charm: ch:nagios
+    channel: latest/edge
     num_units: 1
     series: bionic
     to:
       - '12'
   nrpe:
-    charm: cs:nrpe
+    charm: ch:nrpe
+    channel: latest/edge
   cloudsupport:
     num_units: 1
     to:
       - '11'
   nova-cloud-controller-mysql-router:
-    charm: cs:mysql-router
+    charm: ch:mysql-router
+    channel: latest/edge
   keystone-mysql-router:
-    charm: cs:mysql-router
+    charm: ch:mysql-router
+    channel: latest/edge
   glance-mysql-router:
-    charm: cs:mysql-router
+    charm: ch:mysql-router
+    channel: latest/edge
   neutron-api-mysql-router:
-    charm: cs:mysql-router
+    charm: ch:mysql-router
+    channel: latest/edge
   placement-mysql-router:
-    charm: cs:mysql-router
+    charm: ch:mysql-router
+    channel: latest/edge
   vault-mysql-router:
-    charm: cs:mysql-router
+    charm: ch:mysql-router
+    channel: latest/edge
   mysql-innodb-cluster:
-    charm: cs:mysql-innodb-cluster
+    charm: ch:mysql-innodb-cluster
+    channel: latest/edge
     num_units: 3
     options:
       source: *openstack-origin
@@ -65,7 +71,8 @@ applications:
       - '2'
 
   rabbitmq-server:
-    charm: cs:rabbitmq-server
+    charm: ch:rabbitmq-server
+    channel: latest/edge
     num_units: 1
     options:
       source: *openstack-origin
@@ -73,7 +80,8 @@ applications:
       - '3'
 
   nova-cloud-controller:
-    charm: cs:nova-cloud-controller
+    charm: ch:nova-cloud-controller
+    channel: yoga/edge
     num_units: 1
     options:
       openstack-origin: *openstack-origin
@@ -83,67 +91,80 @@ applications:
       - '4'
 
   neutron-api:
-    charm: cs:neutron-api
+    charm: ch:neutron-api
+    channel: yoga/edge
     num_units: 1
     options:
+      manage-neutron-plugin-legacy-mode: true
       openstack-origin: *openstack-origin
       flat-network-providers: physnet1
-      enable-ml2-port-security: True
-      neutron-security-groups: True
+      neutron-security-groups: true
     to:
       - '5'
 
   keystone:
-    charm: cs:keystone
+    charm: ch:keystone
+    channel: yoga/edge
     num_units: 1
     options:
       openstack-origin: *openstack-origin
     to:
       - '6'
 
-  glance:
-    charm: cs:glance
+  neutron-gateway:
+    charm: ch:neutron-gateway
+    channel: yoga/edge
     num_units: 1
     options:
       openstack-origin: *openstack-origin
+      bridge-mappings: physnet1:br-ex
     to:
       - '7'
 
-  placement:
-    charm: cs:placement
+  glance:
+    charm: ch:glance
+    channel: yoga/edge
     num_units: 1
     options:
       openstack-origin: *openstack-origin
     to:
       - '8'
 
+  neutron-openvswitch:
+    charm: ch:neutron-openvswitch
+    channel: yoga/edge
+
+  placement:
+    charm: ch:placement
+    channel: yoga/edge
+    num_units: 1
+    options:
+      openstack-origin: *openstack-origin
+    to:
+      - '9'
+
   nova-compute:
-    charm: cs:nova-compute
+    charm: ch:nova-compute
+    channel: yoga/edge
     num_units: 1
     storage:
       ephemeral-device: '40G'
     options:
       openstack-origin: *openstack-origin
-    to:
-      - '9'
-  vault:
-    charm: cs:vault
-    num_units: 1
+      config-flags: auto_assign_floating_ip=False
+      enable-live-migration: false
+      aa-profile-mode: enforce
+      debug: true
+      libvirt-image-backend: qcow2
     to:
       - '10'
-  ovn-central:
-    charm: cs:ovn-central
-    num_units: 3
-    options:
-      source: *openstack-origin
+  vault:
+    charm: ch:vault
+    channel: latest/edge
+    num_units: 1
     to:
       - '13'
-      - '14'
-      - '15'
-  ovn-chassis:
-    charm: cs:ovn-chassis
-  neutron-api-plugin-ovn:
-    charm: cs:neutron-api-plugin-ovn
+
 relations:
   - - 'nova-compute:image-service'
     - 'glance:image-service'
@@ -184,6 +205,12 @@ relations:
   - - 'glance:amqp'
     - 'rabbitmq-server:amqp'
 
+  - - 'neutron-gateway:amqp'
+    - 'rabbitmq-server:amqp'
+
+  - - 'nova-cloud-controller:quantum-network-service'
+    - 'neutron-gateway:quantum-network-service'
+
   - - 'neutron-api:shared-db'
     - 'neutron-api-mysql-router:shared-db'
   - - 'neutron-api-mysql-router:db-router'
@@ -197,6 +224,12 @@ relations:
 
   - - 'neutron-api:identity-service'
     - 'keystone:identity-service'
+
+  - - 'nova-compute:neutron-plugin'
+    - 'neutron-openvswitch:neutron-plugin'
+
+  - - 'rabbitmq-server:amqp'
+    - 'neutron-openvswitch:amqp'
 
   - - 'placement:shared-db'
     - 'placement-mysql-router:shared-db'
@@ -228,17 +261,3 @@ relations:
     - 'nova-cloud-controller:certificates'
   - - 'vault:certificates'
     - 'placement:certificates'
-  - - 'ovn-central:certificates'
-    - 'vault:certificates'
-  - - 'ovn-central:ovsdb-cms'
-    - 'neutron-api-plugin-ovn:ovsdb-cms'
-  - - 'ovn-chassis:ovsdb'
-    - 'ovn-central:ovsdb'
-  - - 'ovn-chassis:nova-compute'
-    - 'nova-compute:neutron-plugin'
-  - - 'ovn-chassis:certificates'
-    - 'vault:certificates'
-  - - 'neutron-api-plugin-ovn:neutron-plugin'
-    - 'neutron-api:neutron-plugin-api-subordinate'
-  - - 'vault:certificates'
-    - 'neutron-api-plugin-ovn:certificates'

@@ -52,6 +52,7 @@ class CloudSupportCharm(CharmBase):
         self.state.set_default(installed=False)
         self.state.set_default(nrpe_configured=False)
         self.helper = CloudSupportHelper(self.model, self.charm_dir)
+        self.unit.status = ActiveStatus("Unit is ready")
 
     def on_install(self, event):
         """Install charm and perform initial configuration."""

@@ -17,7 +17,6 @@ from ops.model import ActiveStatus
 
 import os_testing
 
-
 NAGIOS_PLUGINS_DIR = "/usr/local/lib/nagios/plugins/"
 
 
