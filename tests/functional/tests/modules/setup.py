@@ -1,6 +1,7 @@
 """Set up functional tests."""
 
 import subprocess
+import time
 from pathlib import Path
 
 from tests.modules.test_utils import gen_test_ssh_keys
@@ -35,3 +36,8 @@ def add_test_image():
     """Add cirros image."""
     url = "http://download.cirros-cloud.net/0.5.2/cirros-0.5.2-x86_64-disk.img"
     add_image(url, image_name="cloudsupport-image")
+
+
+def wait_for_overcloud():
+    """Wait to ensure overcloud is ready."""
+    time.sleep(120)

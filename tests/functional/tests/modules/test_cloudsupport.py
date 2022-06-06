@@ -1,9 +1,10 @@
 """Test deployment and functionality of the cloudsupport charm."""
+import json
+import logging
+import os
 import textwrap
 import time
 from pathlib import Path
-
-import tenacity
 
 from tests.modules import test_utils
 
@@ -11,6 +12,8 @@ import zaza.openstack.charm_tests.test_utils as openstack_test_utils
 import zaza.openstack.utilities.openstack as openstack_utils
 import zaza.utilities.deployment_env as deployment_env
 from zaza import model
+
+logger = logging.getLogger(__name__)
 
 
 def gen_clouds_yaml(creds_dict):
@@ -45,6 +48,8 @@ class CloudSupportBaseTest(openstack_test_utils.OpenStackBaseTest):
         super(CloudSupportBaseTest, cls).setUpClass()
         cls.unit_name = model.get_units(cls.application_name, cls.model_name)[0].name
         cls.hypervisors = cls.nova_client.hypervisors.list()
+        if len(cls.hypervisors) < 1:
+            raise Exception("No hypervisors found in test cloud")
 
     def get_test_instances(self):
         """Get instances that look like our test instance."""
@@ -54,11 +59,26 @@ class CloudSupportBaseTest(openstack_test_utils.OpenStackBaseTest):
             if vm.name.startswith("cloudsupport-test")
         ]
 
-    def wait_for_server(self, server_id, status, timeout=360):
+    def run_action_on_unit(self, name, **params):
+        """Run action on unit."""
+        result = model.run_action(self.unit_name, name, action_params=params)
+        logger.info(
+            "action `%s` result: %s%s%s",
+            name,
+            str(result.status),
+            os.linesep,
+            json.dumps(result.results, indent=2),
+        )
+        return result
+
+    def wait_for_server(self, server_id, status, timeout=300):
         """Wait for server status."""
+        logger.info("waits for server %s to reach status %s", server_id, status)
         start_time = time.time()
         while time.time() - start_time < timeout:
-            if self.nova_client.servers.get(server_id).status == status:
+            current_status = self.nova_client.servers.get(server_id).status
+            logger.info("server %s is in %s status", server_id, current_status)
+            if current_status == status:
                 break
 
             time.sleep(5)
@@ -95,72 +115,53 @@ class CloudSupportTests(CloudSupportBaseTest):
 
     def test_20_create_instance(self):
         """Test: create an instance."""
-        res = model.run_action(
-            self.unit_name,
+        result = self.run_action_on_unit(
             "create-test-instances",
-            action_params={
-                "nodes": self.hypervisors[0].hypervisor_hostname,
-                "vcpus": 1,
-                "vnfspecs": False,
-            },
+            nodes=self.hypervisors[0].hypervisor_hostname,
+            vcpus=1,
+            vnfspecs=False,
         )
-
-        self.assertEqual(res.status, "completed")
-        self.assertEqual(res.results["Code"], "0")
-        self.assertNotIn("error", res.results["create-results"])
-        test_instances = self.get_test_instances()
-        self.assert_(test_instances)
-        for instance in test_instances:
-            self.wait_for_server(instance.id, "ACTIVE")
+        self.assertEqual(result.status, "completed")
+        self.assertEqual(result.results.get("Code"), "0")
+        self.assertEqual(result.results.get("create-results"), "success")
+        details = result.results.get("create-details").replace("'", '"')
+        _, server_id, _ = json.loads(details)[0]
+        self.wait_for_server(server_id, "ACTIVE")
 
     def test_25_test_connectivity(self):
         """Test: connectivity of an instance."""
-        res = model.run_action(
-            self.unit_name,
-            "test-connectivity",
-        )
-        self.assertEqual(res.status, "completed")
+        result = self.run_action_on_unit("test-connectivity")
+        self.assertEqual(result.status, "completed")
 
     def test_35_test_get_ssh_cmd(self):
         """Verify get-ssh-cmd action complete successfully."""
-        res = model.run_action(
-            self.unit_name,
-            "get-ssh-cmd",
-        )
-        self.assertEqual(res.status, "completed")
+        result = self.run_action_on_unit("get-ssh-cmd")
+        self.assertEqual(result.status, "completed")
 
     def test_45_delete_instance_no_match(self):
         """Test: delete-instance action, non-matching pattern."""
-        res = model.run_action(
-            self.unit_name,
+        result = self.run_action_on_unit(
             "delete-test-instances",
-            action_params={
-                "nodes": self.hypervisors[0].hypervisor_hostname,
-                "pattern": "nomatchxxxx",
-            },
+            nodes=self.hypervisors[0].hypervisor_hostname,
+            pattern="nomatchxxxx",
         )
-        self.assertEqual(res.status, "completed")
-        self.assert_(self.get_test_instances())
+        self.assertEqual(result.status, "completed")
+        self.assertTrue(self.get_test_instances())
 
     def test_50_delete_instance(self):
         """Test: delete-instance action."""
-        res = model.run_action(
-            self.unit_name,
+        result = self.run_action_on_unit(
             "delete-test-instances",
-            action_params={"nodes": self.hypervisors[0].hypervisor_hostname},
+            nodes=self.hypervisors[0].hypervisor_hostname,
         )
-        self.assertEqual(res.status, "completed")
+        self.assertEqual(result.status, "completed")
 
-        @tenacity.retry(
-            stop=tenacity.stop_after_attempt(10),
-            wait=tenacity.wait_fixed(1),
-            retry=tenacity.retry_if_result(bool),
-        )
-        def testfunc():
-            test_inst = self.get_test_instances()
-            return test_inst
+        try_count = 0
+        while len(self.get_test_instances()) > 0 and try_count < 60:
+            time.sleep(5)
+            try_count += 1
 
-        self.assertFalse(testfunc())
+        self.assertFalse(self.get_test_instances())  # test that the list is empty
 
     def test_55_nrpe_check(self):
         """Verify nrpe check exists."""

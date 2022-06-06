@@ -4,8 +4,6 @@ tests:
 gate_bundles:
   - focal-yoga
   - focal-yoga-ovn
-  - jammy-yoga
-  - jammy-yoga-ovn
 dev_bundles:
   - focal-yoga
 smoke_bundles:
@@ -15,6 +13,7 @@ before_deploy:
 configure:
 - zaza.openstack.charm_tests.vault.setup.auto_initialize_no_validation_no_wait
 - tests.modules.setup.add_test_image
+- tests.modules.setup.wait_for_overcloud
 target_deploy_status:
   vault:
     workload-status: blocked
