@@ -28,7 +28,7 @@ parts:
       # Updated versions needed for working nicely with
       # jinja2/markupsafe
       - setuptools
-      - pip
+      - pip<=22.0.4 # tmp fix due https://github.com/pyparsing/pyparsing/issues/400
 
       # Needed as prerequisites for other required packages.
       # Explicitly included here to avoid doing source-based builds
