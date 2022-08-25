@@ -90,8 +90,7 @@ start-vms:
       type: boolean
       default: False
       description: |
-        Forced start of all compute services, not only those that were stopped
-        by the `stop` action.
+        Force all VMs to start, not only those that were stopped by the `stop` action.
   required:
     - compute-node
     - i-really-mean-it

@@ -136,29 +136,29 @@ class CloudSupportHelper:
         )
         nrpe.write()
 
-        return False
-
-    def _check_compute_node_service(self, cloud_name, compute_node, status=None):
-        """Check if compute-node service exists.
-
-        If a status is specified, it will be checked.
-        """
-        for service in con(cloud_name).compute.services():
-            if service.binary == "nova-compute" and service.host == compute_node:
-                if status is None or service.status == status:
-                    return True
+    @staticmethod
+    def _check_compute_node(cloud_name, compute_node, status):
+        """Check if compute-node service exists."""
+        for service in con(cloud_name).compute.hypervisors():
+            if service.name == compute_node and service.status == status:
+                return True
 
         return False
 
     def stop_vms(self, compute_node, cloud_name=None):
-        """Stop all VMs on compute node."""
+        """Stop all VMs on compute node.
+
+        :param compute_node:  name of the compute node registered in cloud
+        :type compute_node: str
+        :param cloud_name: name of the cloud defined in `clouds-yaml` configuration
+        :type cloud_name: Optional[str]
+        """
         stopped_vms = []
         failed_to_stop = []
         cloud_name = cloud_name or self.cloud_name
-        if not self._check_compute_node_service(cloud_name, compute_node, "disabled"):
+        if not self._check_compute_node(cloud_name, compute_node, "disabled"):
             raise CloudSupportError(
-                "nova-compute service is not disabled on host "
-                "`{}`".format(compute_node)
+                "Please disable host `{}` before stop vms".format(compute_node)
             )
         vms = con(cloud_name).compute.servers(
             host=compute_node, all_tenants=True, status="ACTIVE"
@@ -171,10 +171,21 @@ class CloudSupportHelper:
             except SDKException as error:
                 logging.warning("failed to stop VM %s with error: %s", vm.id, error)
                 failed_to_stop.append(vm.id)
+
         return stopped_vms, failed_to_stop
 
-    def start_vms(self, compute_node, stopped_vms=None, cloud_name=None):
-        """Start all VMs on compute node."""
+    def start_vms(self, compute_node, stopped_vms, force_all=False, cloud_name=None):
+        """Start all VMs on compute node.
+
+        :param compute_node:  name of the compute node registered in cloud
+        :type compute_node: str
+        :param stopped_vms: list of VM IDs that were stopped by the stop-vms action
+        :type stopped_vms: List[str]
+        :param force_all: force all VMs to start
+        :type force_all: bool
+        :param cloud_name: name of the cloud defined in `clouds-yaml` configuration
+        :type cloud_name: Optional[str]
+        """
         started_vms = []
         failed_to_start = []
         cloud_name = cloud_name or self.cloud_name
@@ -182,7 +193,7 @@ class CloudSupportHelper:
             host=compute_node, all_tenants=True, status="SHUTOFF"
         )
         for vm in vms:
-            if stopped_vms is not None and vm.id not in stopped_vms:
+            if force_all is False and vm.id not in stopped_vms:
                 # skip all VMs that have not been stopped
                 continue
             try:
@@ -192,4 +203,5 @@ class CloudSupportHelper:
             except SDKException as error:
                 logging.warning("failed to start VM %s with error: %s", vm.id, error)
                 failed_to_start.append(vm.id)
+
         return started_vms, failed_to_start

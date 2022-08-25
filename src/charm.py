@@ -150,20 +150,8 @@ class CloudSupportCharm(CharmBase):
             raise
         event.set_results(results)
 
-    def _verify_stop_start_event(self, event):
-        """Verify requirements of stop-vms/start-vms action."""
-        if not event.params.get("i-really-mean-it"):
-            event.fail("i-really-mean-it is a required parameter")
-            return False
-        if not event.params.get("compute-node"):
-            event.fail("parameter compute-node is missing")
-            return False
-        return True
-
     def on_stop_vms(self, event):
         """Run stop-vms action."""
-        if not self._verify_stop_start_event(event):
-            return
         cloud_name = event.params.get("cloud-name")
         compute_node = event.params.get("compute-node")
         try:
@@ -181,13 +169,11 @@ class CloudSupportCharm(CharmBase):
 
     def on_start_vms(self, event):
         """Run start-vms action."""
-        if not self._verify_stop_start_event(event):
-            return
         cloud_name = event.params.get("cloud-name")
         compute_node = event.params.get("compute-node")
-        force_all = event.params.get("force-all")
+        force_all = event.params.get("force-all", False)
         started_vms, failed_to_start = self.helper.start_vms(
-            compute_node, self.state.stopped_vms if not force_all else None, cloud_name
+            compute_node, self.state.stopped_vms, force_all, cloud_name
         )
         self.state.stopped_vms = []  # clear stored IDs
         event.set_results(
