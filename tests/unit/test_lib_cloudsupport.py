@@ -2,11 +2,9 @@
 # Copyright 2022 Canonical
 # See LICENSE file for licensing details.
 """Unittests for lib-cloudsupport."""
-import unittest
 from unittest import mock
 from unittest.mock import MagicMock, call
 
-import lib_cloudsupport
 from lib_cloudsupport import CloudSupportHelper
 
 from openstack.exceptions import SDKException
@@ -16,171 +14,127 @@ from os_testing import CloudSupportError
 import pytest
 
 
-class TestCloudSupportHelper(unittest.TestCase):
-    """TestCase for CloudSupportHelper."""
+def mock_service(name, status):
+    """Return mocked service object."""
+    service = MagicMock()  # name needs to be set with configure_mock
+    service.configure_mock(name=name, status=status)
+    return service
 
-    def _mock_con(self, hypervisors=None, servers=None):
-        """Mock openstack connection."""
-        mocker_os_testing_con = mock.patch.object(lib_cloudsupport, "con")
-        mock_con = mocker_os_testing_con.start()
-        mock_openstack = mock_con.return_value = MagicMock()
-        mock_openstack.compute.hypervisors.return_value = hypervisors or []
-        mock_openstack.compute.servers.return_value = servers or []
-        self.addCleanup(mocker_os_testing_con.stop)
-        return mock_openstack
 
-    def test_check_compute_node_no_services(self):
-        """Check test of existing compute-node."""
-        self._mock_con(hypervisors=[])
-        self.assertFalse(
-            CloudSupportHelper._check_compute_node("test-cloud", "test-node", "active")
-        )
+def mock_vm(id_, name=None):
+    """Return mocked VM object."""
+    name = name or "vm-{}".format(id_)
+    vm = MagicMock()  # name needs to be set with configure_mock
+    vm.configure_mock(name=name, id=id_)
+    return vm
 
-    def test_check_compute_node_exists(self):
-        """Check test of existing compute-node."""
-        service = MagicMock()  # name needs to be set with configure_mock
-        service.configure_mock(name="test-node", status="active")
-        self._mock_con(hypervisors=[service])
-        self.assertTrue(
-            CloudSupportHelper._check_compute_node("test-cloud", "test-node", "active")
-        )
 
-    def test_check_compute_node_not_exists(self):
-        """Check test of non-existing compute-node."""
-        service = MagicMock()  # name needs to be set with configure_mock
-        service.configure_mock(name="different-test-node", status="active")
-        self._mock_con(hypervisors=[service])
-        self.assertFalse(
-            CloudSupportHelper._check_compute_node("test-cloud", "test-node", "active")
-        )
+@pytest.mark.parametrize(
+    "name, status, hypervisors, exp_result",
+    [
+        ("node", "active", [], False),
+        ("node", "disabled", [], False),
+        ("node", "active", [mock_service("diff-node", "active")], False),
+        ("node", "disabled", [mock_service("node", "active")], False),
+        ("node", "active", [mock_service("node", "active")], True),
+        ("node", "disabled", [mock_service("node", "disabled")], True),
+        (
+            "node",
+            "active",
+            [mock_service("diff-node", "disabled"), mock_service("node", "active")],
+            True,
+        ),
+    ],
+)
+def test_check_compute_node_no_services(
+    openstack, name, status, hypervisors, exp_result
+):
+    """Check test of existing compute-node."""
+    openstack.compute.hypervisors.return_value = hypervisors
+    result = CloudSupportHelper._check_compute_node("test-cloud", name, status)
+    assert result == exp_result
 
-    def test_check_compute_node_different_status(self):
-        """Check test of non-existing compute-node."""
-        service = MagicMock()  # name needs to be set with configure_mock
-        service.configure_mock(name="test-node", status="active")
-        self._mock_con(hypervisors=[service])
-        self.assertFalse(
-            CloudSupportHelper._check_compute_node(
-                "test-cloud", "test-node", "disabled"
-            )
-        )
 
-    def test_stop_vms_compute_node_not_disabled(self):
-        """Try to stop VMs on enabled compute-node."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        with mock.patch.object(helper, "_check_compute_node", return_value=False):
-            with pytest.raises(CloudSupportError):
-                helper.stop_vms("test-node")
+def test_stop_vms_compute_node_not_disabled():
+    """Try to stop VMs on enabled compute-node."""
+    helper = CloudSupportHelper(MagicMock(), MagicMock())
+    with mock.patch.object(helper, "_check_compute_node", return_value=False):
+        with pytest.raises(CloudSupportError):
+            helper.stop_vms("test-node")
 
-    def test_stop_vms_compute_node_no_vms(self):
-        """No VMs on compute-node."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        openstack = self._mock_con(servers=[])
-        with mock.patch.object(helper, "_check_compute_node", return_value=True):
-            stopped_vms, failed_to_stop = helper.stop_vms("test-node")
 
-        openstack.compute.servers.assert_called_once_with(
-            host="test-node", all_tenants=True, status="ACTIVE"
-        )
-        self.assertEqual(stopped_vms, [])
-        self.assertEqual(failed_to_stop, [])
+@pytest.mark.parametrize(
+    "servers, servers_side_effects, exp_stopped, exp_failed",
+    [
+        ((), (None, None), [], []),
+        ((mock_vm(1), mock_vm(2)), (None, None), [1, 2], []),
+        ((mock_vm(1), mock_vm(2)), (None, SDKException), [1], [2]),
+        ((mock_vm(1), mock_vm(2)), (SDKException, SDKException), [], [1, 2]),
+    ],
+)
+def test_stop_vms(openstack, servers, servers_side_effects, exp_stopped, exp_failed):
+    """Test stop-vms helper function."""
+    helper = CloudSupportHelper(MagicMock(), MagicMock())
+    openstack.compute.servers.return_value = servers
+    openstack.compute.stop_server.side_effect = servers_side_effects
+    with mock.patch.object(helper, "_check_compute_node", return_value=True):
+        stopped_vms, failed_to_stop = helper.stop_vms("test-node")
 
-    def test_stop_vms(self):
-        """Stop VMs without any error."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        openstack = self._mock_con(
-            servers=[
-                MagicMock(id=1, name="vm-1"),
-                MagicMock(id=2, name="vm-2"),
-                MagicMock(id=3, name="vm-3"),
-                MagicMock(id=4, name="vm-4"),
-            ]
-        )
-        with mock.patch.object(helper, "_check_compute_node", return_value=True):
-            stopped_vms, failed_to_stop = helper.stop_vms("test-node")
+    openstack.compute.servers.assert_called_once_with(
+        host="test-node", all_tenants=True, status="ACTIVE"
+    )
+    openstack.compute.stop_server.assert_has_calls(
+        [call(server.id) for server in servers]
+    )
 
-        openstack.compute.stop_server.assert_has_calls(
-            [call(1), call(2), call(3), call(4)]
-        )
-        self.assertEqual(stopped_vms, [1, 2, 3, 4])
-        self.assertEqual(failed_to_stop, [])
+    assert stopped_vms == exp_stopped
+    assert failed_to_stop == exp_failed
 
-    def test_stop_vms_with_error(self):
-        """Stop VMs with error."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        openstack = self._mock_con(
-            servers=[
-                MagicMock(id=1, name="vm-1"),
-                MagicMock(id=2, name="vm-2"),
-            ]
-        )
-        openstack.compute.stop_server.side_effect = (None, SDKException)
-        with mock.patch.object(helper, "_check_compute_node", return_value=True):
-            stopped_vms, failed_to_stop = helper.stop_vms("test-node")
 
-        openstack.compute.stop_server.assert_has_calls([call(1), call(2)])
-        self.assertEqual(stopped_vms, [1])
-        self.assertEqual(failed_to_stop, [2])
+@pytest.mark.parametrize(
+    "servers, servers_side_effects, stopped_vms, force_all, exp_started, exp_failed",
+    [
+        ((mock_vm(1), mock_vm(2)), (None, None), [], False, [], []),
+        ((mock_vm(1), mock_vm(2)), (None, None), [1], False, [1], []),
+        ((mock_vm(1), mock_vm(2)), (None, SDKException), [1, 2], False, [1], [2]),
+        ((mock_vm(1), mock_vm(2)), (None, None), [1], True, [1, 2], []),
+        ((mock_vm(1), mock_vm(2)), (None, SDKException), [1], True, [1], [2]),
+        (
+            (mock_vm(1), mock_vm(2)),
+            (SDKException, SDKException),
+            [1, 2],
+            False,
+            [],
+            [1, 2],
+        ),
+    ],
+)
+def test_start_vms(
+    openstack,
+    servers,
+    stopped_vms,
+    force_all,
+    servers_side_effects,
+    exp_started,
+    exp_failed,
+):
+    """Test start-vms helper function."""
+    helper = CloudSupportHelper(MagicMock(), MagicMock())
+    openstack.compute.servers.return_value = servers
+    openstack.compute.start_server.side_effect = servers_side_effects
+    started_vms, failed_to_start = helper.start_vms("test-node", stopped_vms, force_all)
 
-    def test_start_vms_no_vms(self):
-        """No VMs on compute-node."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        openstack = self._mock_con(servers=[])
-        started_vms, failed_to_start = helper.start_vms("test-node", [1, 2])
-
-        openstack.compute.servers.assert_called_once_with(
-            host="test-node", all_tenants=True, status="SHUTOFF"
-        )
-        self.assertEqual(started_vms, [])
-        self.assertEqual(failed_to_start, [])
-
-    def test_start_vms(self):
-        """Start VMs without any error."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        openstack = self._mock_con(
-            servers=[
-                MagicMock(id=1, name="vm-1"),
-                MagicMock(id=2, name="vm-2"),
-                MagicMock(id=3, name="vm-3"),
-                MagicMock(id=4, name="vm-4"),
-            ]
-        )
-        started_vms, failed_to_start = helper.start_vms("test-node", [1, 2])
-        openstack.compute.start_server.assert_has_calls([call(1), call(2)])
-        self.assertEqual(started_vms, [1, 2])
-        self.assertEqual(failed_to_start, [])
-
-    def test_start_vms_with_error(self):
-        """Start VMs without any error."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        openstack = self._mock_con(
-            servers=[
-                MagicMock(id=1, name="vm-1"),
-                MagicMock(id=2, name="vm-2"),
-            ]
-        )
-        openstack.compute.start_server.side_effect = (None, SDKException)
-        started_vms, failed_to_start = helper.start_vms("test-node", [1, 2])
-        openstack.compute.start_server.assert_has_calls([call(1), call(2)])
-        self.assertEqual(started_vms, [1])
-        self.assertEqual(failed_to_start, [2])
-
-    def test_start_vms_force_all(self):
-        """Start all VMs on compute-node."""
-        helper = CloudSupportHelper(MagicMock(), MagicMock())
-        openstack = self._mock_con(
-            servers=[
-                MagicMock(id=1, name="vm-1"),
-                MagicMock(id=2, name="vm-2"),
-                MagicMock(id=3, name="vm-3"),
-                MagicMock(id=4, name="vm-4"),
-            ]
-        )
-        started_vms, failed_to_start = helper.start_vms(
-            "test-node", [1, 2], force_all=True
-        )
+    openstack.compute.servers.assert_called_once_with(
+        host="test-node", all_tenants=True, status="SHUTOFF"
+    )
+    if force_all:
         openstack.compute.start_server.assert_has_calls(
-            [call(1), call(2), call(3), call(4)]
+            [call(server.id) for server in servers]
         )
-        self.assertEqual(started_vms, [1, 2, 3, 4])
-        self.assertEqual(failed_to_start, [])
+    else:
+        openstack.compute.start_server.assert_has_calls(
+            [call(server) for server in stopped_vms]
+        )
+
+    assert started_vms == exp_started
+    assert failed_to_start == exp_failed

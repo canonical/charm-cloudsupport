@@ -2,119 +2,90 @@
 # Copyright 2022 Canonical
 # See LICENSE file for licensing details.
 """Unittests for charm-cloudsupport."""
-import unittest
+from contextlib import contextmanager
 from unittest import mock
-from unittest.mock import MagicMock
-
-import charm
-
-from ops.testing import Harness
 
 from os_testing import CloudSupportError
 
-
-class TestCloudSupportCharm(unittest.TestCase):
-    """Charm unittest TestCase."""
-
-    def setUp(self):
-        self.harness = Harness(charm.CloudSupportCharm)
-        self.harness.begin()
-        self.charm = self.harness.charm
-
-    def test_init(self):
-        """Test initialization of charm."""
-        self.assertEqual(self.charm.unit.status.name, "active")
-        self.assertEqual(self.charm.unit.status.message, "Unit is ready")
+import pytest
 
 
-class TestCloudSupportCharmActions(unittest.TestCase):
-    """Charm actions unittest TestCase."""
+@contextmanager
+def mock_juju_action(name):
+    """Mock JUJU_ACTION_NAME environment variable."""
+    patcher = mock.patch("os.environ")
+    mock_environ = patcher.start()
+    mock_environ.get.return_value = name
+    try:
+        yield name
+    finally:
+        patcher.stop()
 
-    def setUp(self):
-        self.harness = Harness(charm.CloudSupportCharm)
-        self.harness.begin()
-        self.charm = self.harness.charm
-        self.helper = self.harness.charm.helper = MagicMock()
-        self.action_get = self.harness._backend.action_get = MagicMock()
-        self.action_set = self.harness._backend.action_set = MagicMock()
-        self.action_fail = self.harness._backend.action_fail = MagicMock()
 
-    def _mock_juju_action_name(self, name: str):
-        """Mock environment variable JUJU_ACTION_NAME."""
-        patcher = mock.patch("os.environ")
-        mock_environ = patcher.start()
-        mock_environ.get.return_value = name
-        self.addCleanup(patcher.stop)
+def test_init_charm(charm):
+    """Test initialization of charm."""
+    assert charm.unit.status.name == "active"
+    assert charm.unit.status.message == "Unit is ready"
 
-    def test_on_stop_vms(self):
-        """Test stop-vms action."""
-        self._mock_juju_action_name("stop-vms")
-        self.action_get.return_value = {
-            "i-really-mean-it": True,
-            "compute-node": "test-node",
-            "cloud-name": "test-cloud",
-        }
-        self.helper.stop_vms.return_value = ([1, 2, 3, 4], [5])
 
-        # emit action
-        self.charm.on.stop_vms_action.emit()
-        self.helper.stop_vms.assert_called_once_with("test-node", "test-cloud")
-        assert self.charm.state.stopped_vms == [1, 2, 3, 4]
-        self.action_set.assert_called_once_with(
-            {"stopped-vms": [1, 2, 3, 4], "failed-to-stop": [5]}
-        )
+@pytest.mark.parametrize("exp_result", [([1, 2, 3, 4], [5])])
+def test_on_stop_vms(charm, action_set, action_get, exp_result):
+    """Test stop-vms action."""
+    action_get.return_value = {
+        "i-really-mean-it": True,
+        "compute-node": "test-node",
+        "cloud-name": "test-cloud",
+    }
+    stopped_vms, failed_to_stop = exp_result
+    charm.helper.stop_vms.return_value = exp_result
+    with mock_juju_action("stop-vms"):
+        charm.on.stop_vms_action.emit()  # emit action
 
-    def test_on_stop_vms_without_disabled_compute_node(self):
-        """Test stop-vms action, when compute node is not disabled."""
-        self._mock_juju_action_name("stop-vms")
-        self.action_get.return_value = {
-            "i-really-mean-it": True,
-            "compute-node": "test-node",
-            "cloud-name": "test-cloud",
-        }
-        self.helper.stop_vms.side_effect = CloudSupportError("test-message")
-        # emit action
-        self.charm.on.stop_vms_action.emit()
-        self.helper.stop_vms.assert_called_once_with("test-node", "test-cloud")
-        self.action_fail.assert_called_once_with("test-message")
+    charm.helper.stop_vms.assert_called_once_with("test-node", "test-cloud")
+    assert charm.state.stopped_vms == stopped_vms
+    action_set.assert_called_once_with(
+        {"stopped-vms": stopped_vms, "failed-to-stop": failed_to_stop}
+    )
 
-    def test_on_start_vms(self):
-        """Test start-vms actions."""
-        self._mock_juju_action_name("start-vms")
-        self.charm.state.stopped_vms = [1, 2, 3, 4, 5]
-        self.helper.start_vms.return_value = ([1, 2, 3, 4], [5])
-        self.action_get.return_value = {
-            "i-really-mean-it": True,
-            "compute-node": "test-node",
-            "cloud-name": "test-cloud",
-        }
-        # emit action
-        self.charm.on.start_vms_action.emit()
-        self.helper.start_vms.assert_called_once_with(
-            "test-node", [1, 2, 3, 4, 5], False, "test-cloud"
-        )
-        assert self.charm.state.stopped_vms == []
-        self.action_set.assert_called_once_with(
-            {"started-vms": [1, 2, 3, 4], "failed-to-start": [5]}
-        )
 
-    def test_on_start_vms_with_force_all(self):
-        """Test start-vms actions."""
-        self._mock_juju_action_name("start-vms")
-        self.charm.state.stopped_vms = [1, 2, 3, 4, 5]
-        self.helper.start_vms.return_value = ([1, 2, 3, 4], [5])
-        self.action_get.return_value = {
-            "i-really-mean-it": True,
-            "compute-node": "test-node",
-            "cloud-name": "test-cloud",
-            "force-all": True,
-        }
-        # emit action
-        self.charm.on.start_vms_action.emit()
-        self.helper.start_vms.assert_called_once_with(
-            "test-node", [1, 2, 3, 4, 5], True, "test-cloud"
-        )
-        assert self.charm.state.stopped_vms == []
-        self.action_set.assert_called_once_with(
-            {"started-vms": [1, 2, 3, 4], "failed-to-start": [5]}
-        )
+def test_on_stop_vms_without_disabled_compute_node(charm, action_fail, action_get):
+    """Test stop-vms action, when compute node is not disabled."""
+    action_get.return_value = {
+        "i-really-mean-it": True,
+        "compute-node": "test-node",
+        "cloud-name": "test-cloud",
+    }
+    charm.helper.stop_vms.side_effect = CloudSupportError("test-message")
+    with mock_juju_action("stop-vms"):
+        charm.on.stop_vms_action.emit()  # emit action
+
+    charm.helper.stop_vms.assert_called_once_with("test-node", "test-cloud")
+    action_fail.assert_called_once_with("test-message")
+
+
+@pytest.mark.parametrize(
+    "stopped_vms, force_all, started_vms, failed_to_start",
+    [([1, 2, 3, 4, 5], False, [1, 2, 3, 4], [5]), ([1, 2], True, [1, 2, 3, 4], [5])],
+)
+def test_on_start_vms(
+    charm, action_set, action_get, stopped_vms, force_all, started_vms, failed_to_start
+):
+    """Test start-vms actions."""
+    action_get.return_value = {
+        "force-all": force_all,
+        "i-really-mean-it": True,
+        "compute-node": "test-node",
+        "cloud-name": "test-cloud",
+    }
+    charm.state.stopped_vms = stopped_vms
+    charm.helper.start_vms.return_value = (started_vms, failed_to_start)
+    with mock_juju_action("start-vms"):
+        charm.on.start_vms_action.emit()  # emit action
+
+    charm.helper.start_vms.assert_called_once_with(
+        "test-node", stopped_vms, force_all, "test-cloud"
+    )
+    assert charm.state.stopped_vms == []
+    action_set.assert_called_once_with(
+        {"started-vms": started_vms, "failed-to-start": failed_to_start}
+    )
