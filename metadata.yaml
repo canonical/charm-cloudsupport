@@ -6,8 +6,7 @@ description: |
   "Support cloud operations such as node testing and system verification"
 tags:
   - ops
-series:
-  - focal
+series: []
 subordinate: false
 provides:
     nrpe-external-master:
