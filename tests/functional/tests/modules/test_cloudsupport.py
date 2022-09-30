@@ -6,6 +6,8 @@ import textwrap
 import time
 from pathlib import Path
 
+from tenacity import retry, stop_after_attempt, wait_fixed
+
 from tests.modules import test_utils
 
 import zaza.openstack.charm_tests.test_utils as openstack_test_utils
@@ -58,6 +60,11 @@ class CloudSupportBaseTest(openstack_test_utils.OpenStackBaseTest):
             for vm in self.nova_client.servers.list()
             if vm.name.startswith("cloudsupport-test")
         ]
+
+    def delete_test_instances(self):
+        """Delete all test instances."""
+        for vm in self.get_test_instances():
+            self.nova_client.servers.delete(vm)
 
     def run_action_on_unit(self, name, **params):
         """Run action on unit."""
@@ -113,8 +120,12 @@ class CloudSupportTests(CloudSupportBaseTest):
             self.application_name, ".ssh/id_rsa_cloudsupport", "KEY"
         )
 
+    # Retry upto 5 minutes, because sometimes http server error occurs
+    # while creating the instance.
+    @retry(stop=stop_after_attempt(15), wait=wait_fixed(20))
     def test_20_create_instance(self):
         """Test: create an instance."""
+        self.delete_test_instances()  # remove instances from the previous try
         result = self.run_action_on_unit(
             "create-test-instances",
             nodes=self.hypervisors[0].hypervisor_hostname,
@@ -128,6 +139,8 @@ class CloudSupportTests(CloudSupportBaseTest):
         _, server_id, _ = json.loads(details)[0]
         self.wait_for_server(server_id, "ACTIVE")
 
+    # Retry upto 6 minutes because the network connection may fail in the beginning.
+    @retry(stop=stop_after_attempt(18), wait=wait_fixed(20))
     def test_25_test_connectivity(self):
         """Test: connectivity of an instance."""
         result = self.run_action_on_unit("test-connectivity")

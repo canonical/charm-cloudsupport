@@ -4,6 +4,8 @@ import subprocess
 import time
 from pathlib import Path
 
+from tenacity import retry, stop_after_attempt, wait_fixed
+
 from tests.modules.test_utils import gen_test_ssh_keys
 
 import zaza.utilities.deployment_env as deployment_env
@@ -32,6 +34,9 @@ def model_config():
     subprocess.run("juju model-config {}".format(str(ud_file)), shell=True)
 
 
+# Retry upto 3 minutes because sometimes vault is not ready,
+# and it causes error on tls connection
+@retry(stop=stop_after_attempt(18), wait=wait_fixed(10))
 def add_test_image():
     """Add cirros image."""
     url = "http://download.cirros-cloud.net/0.5.2/cirros-0.5.2-x86_64-disk.img"
