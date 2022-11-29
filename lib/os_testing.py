@@ -323,6 +323,12 @@ def delete_instance(nodes, pattern, cloud_name="cloud1"):
 
 
 def get_instances(instance=None, cloud_name="cloud1"):
+    """Get the list of instance ids from the cloud.
+
+    :param instance: get particular instance if specified
+    :param cloud_name: the cloud name to get the instances from
+    :return: list of instances
+    """
     if not instance:
         instances = [
             i.id
@@ -338,6 +344,12 @@ def get_instances(instance=None, cloud_name="cloud1"):
 
 
 def is_ovn_used(hypervisor_hostname, cloud_name="cloud1"):
+    """Check is OVN used in a particular cloud.
+
+    :param hypervisor_hostname: the hostname of the hypervisor machine
+    :param cloud_name: the cloud name the check is performed on
+    :return: boolean value for the condition
+    """
     if (
         len(
             list(

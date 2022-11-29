@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 def gen_clouds_yaml(creds_dict):
+    """Generate and return the clouds.yaml content."""
     template = textwrap.dedent(
         """
     clouds:

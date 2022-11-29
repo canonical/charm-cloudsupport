@@ -44,6 +44,7 @@ def get_port(srv, network=None):
 
 
 def build_ssh_command_line(ip, net):
+    """Build the ssh command."""
     dhcp_agent = next(con().network.network_hosting_dhcp_agents(net))
     cmdline = (
         """ssh -o 'ProxyCommand=ssh -l ubuntu {} "sudo ip netns exec qdhcp-{} """
@@ -53,6 +54,7 @@ def build_ssh_command_line(ip, net):
 
 
 def get_ssh_command_line(instance, network=None):
+    """Print the ssh command."""
     srv = con().compute.find_server(instance)
     if not srv:
         raise QsshError("Can't find {}".format(instance))

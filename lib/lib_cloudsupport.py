@@ -47,13 +47,16 @@ class CloudSupportHelper:
 
     @property
     def check_stale_server(self):
+        """Get the stale-server-check config option value."""
         return self.charm_config.get("stale-server-check")
 
     @property
     def cloud_name(self):
+        """Get the cloud-name config option value."""
         return self.charm_config.get("cloud-name")
 
     def install_dependencies(self):
+        """Install charm dependencies."""
         fetch.apt_install(["python3-openstackclient"], fatal=True)
 
     def verify_config(self):

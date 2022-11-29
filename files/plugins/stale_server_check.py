@@ -23,6 +23,7 @@ class NrpeStatus(IntEnum):
 
 
 def nrpe_check():
+    """Perform the nrpe check."""
     args = parse_args()
     crit_servers, warn_servers = get_stale_servers(
         args.name_prefix, args.crit_days, args.warn_days, args.ignored_servers_uuids
@@ -54,6 +55,7 @@ def nrpe_check():
 
 
 def parse_args():
+    """Parse the command line arguments."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--cloud-name", dest="cloud_name", type=str, required=True)
     ap.add_argument("--name-prefix", dest="name_prefix", type=str, required=True)
@@ -71,6 +73,7 @@ def parse_args():
 
 
 def get_stale_servers(name_prefix, crit_days, warn_days, ignored_servers=None):
+    """Get the stale servers."""
     crit_servers = []
     warn_servers = []
     server_search_pattern = "^{}".format(re.escape(name_prefix))
