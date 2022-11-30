@@ -29,5 +29,6 @@ def gen_test_ssh_keys(tmpdir):
 
 
 def get_priv_key(tmpdir):
+    """Return the private key contents."""
     priv_file = tmpdir / "test_id_rsa"
     return priv_file.open().read()

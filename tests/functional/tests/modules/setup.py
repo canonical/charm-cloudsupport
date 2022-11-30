@@ -24,6 +24,7 @@ cloudinit-userdata: |
 
 
 def model_config():
+    """Set the model configuration."""
     tmp = Path(deployment_env.get_tmpdir())
     priv_file, pub_file = gen_test_ssh_keys(tmp)
     with pub_file.open() as f:
