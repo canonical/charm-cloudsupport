@@ -1,5 +1,7 @@
 """Set up functional tests."""
 
+import logging
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -26,13 +28,21 @@ cloudinit-userdata: |
 def model_config():
     """Set the model configuration."""
     tmp = Path(deployment_env.get_tmpdir())
+    # separate tmp dir created in home dir for cloudinit file because
+    # strictly confined juju 3.x snap cannot access dir in /tmp
+    tmp_cloudinit = Path.home() / "tmp"
+    try:
+        os.mkdir(tmp_cloudinit)
+    except FileExistsError:
+        logging.debug("{} already exists.".format(str(tmp_cloudinit)))
     priv_file, pub_file = gen_test_ssh_keys(tmp)
     with pub_file.open() as f:
         ud = userdata_tmpl.format(f.read())
-    ud_file = tmp / "cloudinit-userdata.yaml"
+    ud_file = tmp_cloudinit / "cloudinit-userdata.yaml"
     with ud_file.open("w") as f:
         f.write(ud)
-    subprocess.run("juju model-config {}".format(str(ud_file)), shell=True)
+    logging.debug("Running juju model-config --file {}".format(str(ud_file)))
+    subprocess.run("juju model-config --file {}".format(str(ud_file)), shell=True)
 
 
 # Retry upto 3 minutes because sometimes vault is not ready,
