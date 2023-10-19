@@ -1,11 +1,10 @@
 """Set up functional tests."""
 
 import logging
-import os
 import subprocess
-from tempfile import NamedTemporaryFile
 import time
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from tenacity import retry, stop_after_attempt, wait_fixed
 
@@ -40,7 +39,9 @@ def model_config():
         # move file pointer to 0 so it can be read again without closing
         f_cloudinit.seek(0)
         logging.debug("Running juju model-config --file {}".format(f_cloudinit.name))
-        subprocess.run("juju model-config --file {}".format(f_cloudinit.name), shell=True)
+        subprocess.run(
+            "juju model-config --file {}".format(f_cloudinit.name), shell=True
+        )
 
 
 # Retry upto 3 minutes because sometimes vault is not ready,
