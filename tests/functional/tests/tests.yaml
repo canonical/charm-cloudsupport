@@ -2,14 +2,12 @@ charm_name: cloudsupport
 tests:
  - tests.modules.test_cloudsupport.CloudSupportTests
 gate_bundles:
-  - jammy-yoga
   - focal-yoga
   - jammy-yoga-ovn
-  - focal-yoga-ovn
 dev_bundles:
-  - jammy-yoga
+  - focal-yoga
 smoke_bundles:
-  - jammy-yoga
+  - focal-yoga
 before_deploy:
 - tests.modules.setup.model_config
 configure:
