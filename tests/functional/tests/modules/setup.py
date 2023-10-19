@@ -3,6 +3,7 @@
 import logging
 import os
 import subprocess
+from tempfile import NamedTemporaryFile
 import time
 from pathlib import Path
 
@@ -28,21 +29,18 @@ cloudinit-userdata: |
 def model_config():
     """Set the model configuration."""
     tmp = Path(deployment_env.get_tmpdir())
-    # separate tmp dir created in home dir for cloudinit file because
-    # strictly confined juju 3.x snap cannot access dir in /tmp
-    tmp_cloudinit = Path.home() / "tmp"
-    try:
-        os.mkdir(tmp_cloudinit)
-    except FileExistsError:
-        logging.debug("{} already exists.".format(str(tmp_cloudinit)))
     priv_file, pub_file = gen_test_ssh_keys(tmp)
     with pub_file.open() as f:
         ud = userdata_tmpl.format(f.read())
-    ud_file = tmp_cloudinit / "cloudinit-userdata.yaml"
-    with ud_file.open("w") as f:
-        f.write(ud)
-    logging.debug("Running juju model-config --file {}".format(str(ud_file)))
-    subprocess.run("juju model-config --file {}".format(str(ud_file)), shell=True)
+
+    # tmp file for cloudinit-userdata config is created in the home dir
+    # because strictly confined juju 3.x snap cannot access dir in /tmp
+    with NamedTemporaryFile(mode="w+", dir=Path.home()) as f_cloudinit:
+        f_cloudinit.write(ud)
+        # move file pointer to 0 so it can be read again without closing
+        f_cloudinit.seek(0)
+        logging.debug("Running juju model-config --file {}".format(f_cloudinit.name))
+        subprocess.run("juju model-config --file {}".format(f_cloudinit.name), shell=True)
 
 
 # Retry upto 3 minutes because sometimes vault is not ready,
