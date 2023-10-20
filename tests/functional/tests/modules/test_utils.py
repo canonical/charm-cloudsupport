@@ -10,15 +10,16 @@ def gen_test_ssh_keys(tmpdir):
     """
     priv_file = tmpdir / "test_id_rsa"
     pub_file = tmpdir / "test_id_rsa.pub"
+    # use ed25519 key for testing since if RSA key is provided,
+    # it is being treated as a DSA key due to fabric/paramiko connection issue
+    # when providing ssh key with "key_filename" setting.
+    # refer: https://github.com/fabric/fabric/issues/2182,
+    # https://github.com/paramiko/paramiko/issues/1839
     check_output(
         [
             "ssh-keygen",
-            "-m",
-            "PEM",
             "-t",
-            "rsa",
-            "-b",
-            "1024",
+            "ed25519",
             "-P",
             "",
             "-f",
