@@ -78,6 +78,11 @@ applications:
       - '3'
 
   nova-cloud-controller:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
     charm: ch:nova-cloud-controller
     channel: yoga/edge
     num_units: 1
@@ -101,6 +106,11 @@ applications:
       - '5'
 
   keystone:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
     charm: ch:keystone
     channel: yoga/edge
     num_units: 1
@@ -120,6 +130,11 @@ applications:
       - '7'
 
   glance:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
     charm: ch:glance
     channel: yoga/edge
     num_units: 1
@@ -142,6 +157,11 @@ applications:
       - '9'
 
   nova-compute:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
     charm: ch:nova-compute
     channel: yoga/edge
     num_units: 1
@@ -157,6 +177,11 @@ applications:
     to:
       - '10'
   vault:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
     charm: ch:vault
     channel: latest/edge
     num_units: 1
