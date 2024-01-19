@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
     with:
       command: "make functional"
-      juju-channel: "3.1/stable"
+      juju-channel: "2.9/stable"
       nested-containers: false
       python-version: "3.10"
       timeout-minutes: 120
@@ -35,7 +35,7 @@ jobs:
       action-operator: false
       external-controller: true
       runs-on: "['self-hosted', 'runner-cloudsupport-b']"
-      juju-controller: soleng-ci-ctrl
+      juju-controller: soleng-ci-ctrl-29
       zaza-yaml: "LS0tCm1vZGVsX3NldHRpbmdzOgogIGltYWdlLXN0cmVhbTogcmVsZWFzZWQKcmVnaW9uOiBwcm9kc3RhY2s2CmNsb3VkOiBidWlsZGVyLWNsb3VkLTI5CmNyZWRlbnRpYWw6IGJ1aWxkZXItY2xvdWQtMjktY3JlZAo="
     secrets:
       juju-controllers-yaml: ${{ secrets.JUJU_CONTROLLERS_YAML }}
