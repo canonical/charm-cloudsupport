@@ -134,7 +134,7 @@ class CloudSupportTests(CloudSupportBaseTest):
             vnfspecs=False,
         )
         self.assertEqual(result.status, "completed")
-        self.assertEqual(result.results.get("return-code"), 0)
+        self.assertEqual(result.results.get("Code"), "0")
         self.assertEqual(result.results.get("create-results"), "success")
         details = result.results.get("create-details").replace("'", '"')
         _, server_id, _ = json.loads(details)[0]
