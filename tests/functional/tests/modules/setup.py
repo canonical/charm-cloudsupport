@@ -11,7 +11,9 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 from tests.modules.test_utils import gen_test_ssh_keys
 
 import zaza.utilities.deployment_env as deployment_env
+from zaza import model
 from zaza.openstack.charm_tests.glance.setup import add_image
+
 
 userdata_tmpl = """
 cloudinit-userdata: |
@@ -38,10 +40,8 @@ def model_config():
         f_cloudinit.write(ud)
         # move file pointer to 0 so it can be read again without closing
         f_cloudinit.seek(0)
-        logging.debug("Running juju model-config --file {}".format(f_cloudinit.name))
-        subprocess.run(
-            "juju model-config --file {}".format(f_cloudinit.name), shell=True
-        )
+        logging.debug("Running juju model-config {}".format(f_cloudinit.name))
+        subprocess.run("juju model-config {}".format(f_cloudinit.name), shell=True)
 
 
 # Retry upto 3 minutes because sometimes vault is not ready,
@@ -50,6 +50,9 @@ def model_config():
 def add_test_image():
     """Add cirros image."""
     url = "http://download.cirros-cloud.net/0.5.2/cirros-0.5.2-x86_64-disk.img"
+    # Manually expose keystone admin port because it's not one of the keystone
+    # juju endpoint
+    model.run_on_unit("keystone/0", "open-port 35357")
     add_image(url, image_name="cloudsupport-image")
 
 
