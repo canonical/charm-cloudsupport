@@ -144,6 +144,20 @@ class CloudSupportTests(CloudSupportBaseTest):
     @retry(stop=stop_after_attempt(18), wait=wait_fixed(20))
     def test_25_test_connectivity(self):
         """Test: connectivity of an instance."""
+        # Workaround on CI environment that the DNS can not resolve the
+        # hostname of the dhcp_agent/hypervisor machine.
+        try:
+            # Is OVS
+            model.get_application("neutron-gateway")
+            app = "neutron-gateway"
+        except KeyError:
+            # Is OVN
+            app = "nova-compute"
+        host_ip = model.get_app_ips(app)[0]
+        host = model.run_on_unit(f"{app}/0", "hostname").get("Stdout").rstrip()
+        cmd = f"""echo "{host_ip} {host}" >> /etc/hosts """
+        model.run_on_unit(self.unit_name, cmd)
+
         result = self.run_action_on_unit("test-connectivity")
         self.assertEqual(result.status, "completed")
 
