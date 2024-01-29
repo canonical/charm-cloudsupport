@@ -39,6 +39,7 @@ submodules-update:
 	@git submodule update --init --recursive --remote --merge
 
 build:
+	sudo apt install -y unzip
 	@echo "Building charm"
 	@-git rev-parse --abbrev-ref HEAD > ./repo-info
 	@-git describe --always > ./version

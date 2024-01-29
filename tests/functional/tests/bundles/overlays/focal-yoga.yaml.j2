@@ -1,1 +1,36 @@
 series: focal
+applications:
+  nova-cloud-controller:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
+
+  keystone:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
+
+  glance:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
+
+  nova-compute:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
+
+  vault:
+    exposed-endpoints:
+      "":
+        expose-to-cidrs:
+        - 0.0.0.0/0
+        - ::/0
