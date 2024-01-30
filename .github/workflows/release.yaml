@@ -24,3 +24,4 @@ jobs:
     with:
       channel: "latest/edge"
       upload-image: false
+      runs-on: "['ubuntu-20.04']"
