@@ -36,6 +36,7 @@ applications:
     charm: ch:nrpe
     channel: latest/edge
   cloudsupport:
+    charm: cloudsupport
     num_units: 1
     to:
       - '11'

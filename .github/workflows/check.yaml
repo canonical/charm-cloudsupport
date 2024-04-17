@@ -18,7 +18,6 @@ jobs:
         python-version: ["3.8", "3.10"]
     with:
       python-version: ${{ matrix.python-version }}
-      tox-version: "<4"
 
   func:
     uses: canonical/bootstack-actions/.github/workflows/func.yaml@v3
@@ -27,15 +26,14 @@ jobs:
       fail-fast: false
     with:
       command: "make functional"
-      juju-channel: "2.9/stable"
+      juju-channel: "3.4/stable"
       nested-containers: false
       python-version: "3.10"
       timeout-minutes: 120
-      tox-version: "<4"
       action-operator: false
       external-controller: true
       runs-on: "['self-hosted', 'runner-cloudsupport']"
-      juju-controller: soleng-ci-ctrl-29
+      juju-controller: soleng-ci-ctrl-34
       zaza-yaml: "LS0tCm1vZGVsX3NldHRpbmdzOgogIGltYWdlLXN0cmVhbTogcmVsZWFzZWQKcmVnaW9uOiBwcm9kc3RhY2s2CmNsb3VkOiBidWlsZGVyLWNsb3VkLTI5CmNyZWRlbnRpYWw6IGJ1aWxkZXItY2xvdWQtMjktY3JlZAo="
     secrets:
       juju-controllers-yaml: ${{ secrets.JUJU_CONTROLLERS_YAML }}
