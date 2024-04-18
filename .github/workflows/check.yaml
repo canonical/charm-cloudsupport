@@ -34,7 +34,7 @@ jobs:
       external-controller: true
       runs-on: "['self-hosted', 'runner-cloudsupport']"
       juju-controller: soleng-ci-ctrl-34
-      zaza-yaml: "LS0tCm1vZGVsX3NldHRpbmdzOgogIGltYWdlLXN0cmVhbTogcmVsZWFzZWQKcmVnaW9uOiBwcm9kc3RhY2s2CmNsb3VkOiBidWlsZGVyLWNsb3VkLTI5CmNyZWRlbnRpYWw6IGJ1aWxkZXItY2xvdWQtMjktY3JlZAo="
+      zaza-yaml: "LS0tCm1vZGVsX3NldHRpbmdzOgogIGltYWdlLXN0cmVhbTogcmVsZWFzZWQKcmVnaW9uOiBwcm9kc3RhY2s2CmNsb3VkOiBidWlsZGVyLWNsb3VkCmNyZWRlbnRpYWw6IGJ1aWxkZXItY2xvdWQtY3JlZAoK"
     secrets:
       juju-controllers-yaml: ${{ secrets.JUJU_CONTROLLERS_YAML }}
       juju-accounts-yaml: ${{ secrets.JUJU_ACCOUNTS_YAML }}
