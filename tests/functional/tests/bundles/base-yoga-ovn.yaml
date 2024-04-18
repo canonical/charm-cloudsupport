@@ -21,7 +21,6 @@ machines:
   '10':
   '11':
   '12':
-    series: bionic
   '13':
     constraints: mem=3072M
   '14':
@@ -30,11 +29,9 @@ machines:
     constraints: mem=3072M
 
 applications:
-  nagios:
-    charm: ch:nagios
-    channel: latest/edge
+  cos-proxy:  # using cos-proxy instead of nagios, since we are testing only relation joined
+    charm: cos-proxy
     num_units: 1
-    series: bionic
     to:
       - '12'
   nrpe:
@@ -234,7 +231,7 @@ relations:
     - 'nrpe:nrpe-external-master'
 
   - - 'nrpe:monitors'
-    - 'nagios:monitors'
+    - 'cos-proxy:monitors'
   - - 'vault:shared-db'
     - 'vault-mysql-router:shared-db'
   - - 'vault-mysql-router:db-router'
