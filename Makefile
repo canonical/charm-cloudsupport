@@ -1,9 +1,6 @@
 PYTHON := /usr/bin/python3
 
 PROJECTPATH=$(dir $(realpath $(MAKEFILE_LIST)))
-ifndef CHARM_BUILD_DIR
-	CHARM_BUILD_DIR=${PROJECTPATH}.build
-endif
 METADATA_FILE="metadata.yaml"
 CHARM_NAME=$(shell cat ${PROJECTPATH}/${METADATA_FILE} | grep -E '^name:' | awk '{print $$2}')
 
@@ -25,10 +22,10 @@ help:
 	@echo ""
 
 clean:
-	@echo "Cleaning files"
-	@git clean -ffXd -e '!.idea'
+	@echo "Cleaning existing build"
+	@rm -rf ${PROJECTPATH}/${CHARM_NAME}*.charm
+	@echo "Cleaning charmcraft"
 	@charmcraft clean
-	@rm -rf ${PROJECTPATH}/*.charm
 
 submodules:
 	@echo "Cloning submodules"
@@ -38,26 +35,14 @@ submodules-update:
 	@echo "Pulling latest updates for submodules"
 	@git submodule update --init --recursive --remote --merge
 
-build:
-	sudo apt install -y unzip
+build: clean
 	@echo "Building charm"
-	@-git rev-parse --abbrev-ref HEAD > ./repo-info
-	@-git describe --always > ./version
 	@charmcraft -v pack ${BUILD_ARGS}
 	@bash -c ./rename.sh
-	@mkdir -p ${CHARM_BUILD_DIR}/${CHARM_NAME}
-	@unzip ${PROJECTPATH}/${CHARM_NAME}.charm -d ${CHARM_BUILD_DIR}/${CHARM_NAME}
 
-release: clean build unpack
+release: clean build
 	@echo "Charms built:"
 	@ls -l "${PROJECTPATH}"/*.charm
-
-unpack: build
-	@-rm -rf ${CHARM_BUILD_DIR}/${CHARM_NAME}
-	@mkdir -p ${CHARM_BUILD_DIR}/${CHARM_NAME}
-	@echo "Unpacking built .charm into ${CHARM_BUILD_DIR}/${CHARM_NAME}"
-	@cd ${CHARM_BUILD_DIR}/${CHARM_NAME} && unzip -q ${CHARM_BUILD_DIR}/${CHARM_NAME}.charm
-	@echo "Charm is unpacked to ${CHARM_BUILD_DIR}/${CHARM_NAME}"
 
 lint:
 	@echo "Running lint checks"
@@ -76,15 +61,15 @@ unittests:
 	@tox -e unit
 
 functional: build
-	@echo "Executing functional tests in ${CHARM_BUILD_DIR}"
-	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} CHARM_LOCATION=${PROJECTPATH} tox -e func
+	@echo "Executing functional tests with ${PROJECTPATH}/${CHARM_NAME}.charm"
+	@CHARM_LOCATION=${PROJECTPATH} tox -e func -- ${FUNC_ARGS}
 
-smoke: build 
-	@echo "Executing smoke tests in ${CHARM_BUILD_DIR}"
-	@CHARM_BUILD_DIR=${CHARM_BUILD_DIR} CHARM_LOCATION=${PROJECTPATH} tox -e func-smoke
+smoke: build
+	@echo "Executing smoke functional tests with ${PROJECTPATH}/${CHARM_NAME}.charm"
+	@CHARM_LOCATION=${PROJECTPATH} tox -e func-smoke -- ${FUNC_ARGS}
 
 test: lint unittests functional
 	@echo "Tests completed for charm ${CHARM_NAME}."
 
 # The targets below don't depend on a file
-.PHONY: help submodules submodules-update clean build release lint black proof unittests functional test unpack
+.PHONY: help submodules submodules-update clean build release lint black proof unittests functional test

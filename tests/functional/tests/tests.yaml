@@ -30,3 +30,6 @@ target_deploy_status:
   ovn-chassis-octavia:
     workload-status: waiting
     workload-status-message-prefix: "'certificates' awaiting server certificate data"
+  cos-proxy:
+    workload-status: blocked
+    workload-status-message-prefix: "Missing one of (Prometheus|target|nrpe) relation(s)"
