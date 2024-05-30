@@ -32,4 +32,4 @@ target_deploy_status:
     workload-status-message-prefix: "'certificates' awaiting server certificate data"
   cos-proxy:
     workload-status: blocked
-    workload-status-message-prefix: "Missing one of (Prometheus|target|nrpe) relation(s)"
+    workload-status-message-prefix: "Missing one of (Prometheus|target|nrpe|grafana-agent) relation(s)"
