@@ -40,8 +40,10 @@ def model_config():
         f_cloudinit.write(ud)
         # move file pointer to 0 so it can be read again without closing
         f_cloudinit.seek(0)
-        logging.debug("Running juju model-config {}".format(f_cloudinit.name))
-        subprocess.run("juju model-config {}".format(f_cloudinit.name), shell=True)
+        logging.debug("Running juju model-config --file {}".format(f_cloudinit.name))
+        subprocess.run(
+            "juju model-config --file {}".format(f_cloudinit.name), shell=True
+        )
 
 
 # Retry upto 3 minutes because sometimes vault is not ready,
