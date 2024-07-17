@@ -2,8 +2,19 @@
 # https://juju.is/docs/sdk/charmcraft-config
 type: "charm"
 name: cloudsupport
+title: Cloud Support
+summary: Support cloud operations
+description: |
+  "Support cloud operations such as node testing and system verification"
+subordinate: false
+provides:
+    nrpe-external-master:
+      interface: nrpe-external-master
+      scope: container
+      optional: true
 links:
   documentation: https://discourse.charmhub.io/t/cloudsupport-docs-index/14791
+  contact: BootStack Charmers <bootstack-charmers@lists.canonical.com>
   issues:
     - https://github.com/canonical/charm-cloudsupport/issues
   source:
