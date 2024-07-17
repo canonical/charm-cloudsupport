@@ -1,6 +1,13 @@
 # Learn more about charmcraft.yaml configuration at:
 # https://juju.is/docs/sdk/charmcraft-config
 type: "charm"
+name: cloudsupport
+links:
+  documentation: https://discourse.charmhub.io/t/cloudsupport-docs-index/14791
+  issues:
+    - https://github.com/canonical/charm-cloudsupport/issues
+  source:
+    - https://github.com/canonical/charm-cloudsupport
 bases:
     - build-on:
         - name: ubuntu
