@@ -4,7 +4,7 @@ type: "charm"
 bases:
     - build-on:
         - name: ubuntu
-          channel: "20.04"
+          channel: "22.04"
           architectures: ["amd64"]
       run-on:
         - name: ubuntu
@@ -13,10 +13,6 @@ bases:
               - amd64
         - name: ubuntu
           channel: "20.04"
-          architectures:
-              - amd64
-        - name: ubuntu
-          channel: "18.04"
           architectures:
               - amd64
 parts:
@@ -28,6 +24,8 @@ parts:
       - rustc
       - cargo
       - libssl-dev
+      # Needed by charmhelpers (master branch)
+      - git
     charm-binary-python-packages:
       # Updated versions needed for working nicely with
       # jinja2/markupsafe
