@@ -28,6 +28,8 @@ parts:
       - rustc
       - cargo
       - libssl-dev
+      # Needed by charmhelpers (master branch)
+      - git
     charm-binary-python-packages:
       # Updated versions needed for working nicely with
       # jinja2/markupsafe
