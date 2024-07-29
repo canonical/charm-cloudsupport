@@ -29,6 +29,10 @@ parts:
       - cargo
       - libssl-dev
     charm-binary-python-packages:
+      # This package failed to build after setuptool == 72.0.0, see https://github.com/pypa/setuptools/issues/4519.
+      # We need to use pre-built wheel for this package
+      - dogpile.cache
+      - requests
       # Updated versions needed for working nicely with
       # jinja2/markupsafe
       - setuptools
