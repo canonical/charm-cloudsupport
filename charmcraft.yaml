@@ -4,19 +4,11 @@ type: "charm"
 bases:
     - build-on:
         - name: ubuntu
-          channel: "20.04"
+          channel: "22.04"
           architectures: ["amd64"]
       run-on:
         - name: ubuntu
           channel: "22.04"
-          architectures:
-              - amd64
-        - name: ubuntu
-          channel: "20.04"
-          architectures:
-              - amd64
-        - name: ubuntu
-          channel: "18.04"
           architectures:
               - amd64
 parts:
@@ -28,11 +20,13 @@ parts:
       - rustc
       - cargo
       - libssl-dev
+      # Needed to fetch charmhelpers from HEAD
+      - git
     charm-binary-python-packages:
       # Updated versions needed for working nicely with
       # jinja2/markupsafe
       - setuptools
-      - pip<=22.0.4 # tmp fix due https://github.com/pyparsing/pyparsing/issues/400
+      - pip
 
       # Needed as prerequisites for other required packages.
       # Explicitly included here to avoid doing source-based builds
@@ -51,6 +45,9 @@ parts:
       #- fabric         # currently tarball-only
       #- python-openstackclient  # pulls cryptography dependency before
                                 # setuptools-rust can be installed
+  extra-files:
+    plugin: dump
+    source: .
     prime:
       - files
       - copyright
