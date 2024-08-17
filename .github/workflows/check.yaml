@@ -2,6 +2,12 @@ name: Check workflow running linter, unit and functional tests
 
 on:
   workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Avoid model destruction to aid debugging failed runs'
+        required: false
+        default: false
+        type: boolean
   workflow_call:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -13,6 +19,10 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
+
+env:
+  # TEST_JUJU3 needed due https://github.com/openstack-charmers/zaza/blob/b22c2eed4c322f1dfc14ffb2d31e0dd18c911a40/setup.py#L47 to support Juju3+
+  func_cmd: TEST_JUJU3=1 make functional ${{ github.event.inputs.debug_enabled && "--keep-faulty-model" }}
 
 jobs:
   lint-unit:
@@ -30,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        command: ["TEST_JUJU3=1 make functional"]  # TEST_JUJU3 needed due https://github.com/openstack-charmers/zaza/blob/b22c2eed4c322f1dfc14ffb2d31e0dd18c911a40/setup.py#L47 to support Juju3+
+        command: ${{ env.func_command }}
         juju-channel: ["3.4/stable"]
         
     with:
