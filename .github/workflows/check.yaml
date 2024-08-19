@@ -20,9 +20,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
 
-env:
-  # TEST_JUJU3 needed due https://github.com/openstack-charmers/zaza/blob/b22c2eed4c322f1dfc14ffb2d31e0dd18c911a40/setup.py#L47 to support Juju3+
-  func_cmd: "TEST_JUJU3=1 make functional ${{ github.event.inputs.debug_enabled && '--keep-faulty-model' }}"
 
 jobs:
   lint-unit:
@@ -37,10 +34,13 @@ jobs:
   func:
     uses: canonical/bootstack-actions/.github/workflows/func.yaml@v3
     needs: lint-unit
+    env:
+      # TEST_JUJU3 needed due https://github.com/openstack-charmers/zaza/blob/b22c2eed4c322f1dfc14ffb2d31e0dd18c911a40/setup.py#L47 to support Juju3+
+      cmd: "TEST_JUJU3=1 make functional ${{ github.event.inputs.debug_enabled && '--keep-faulty-model' }}"
     strategy:
       fail-fast: false
       matrix:
-        command: ${{ env.func_command }}
+        command: $cmd
         juju-channel: ["3.4/stable"]
         
     with:
