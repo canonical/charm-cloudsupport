@@ -36,6 +36,8 @@ jobs:
     needs: lint-unit
     with:
       # TEST_JUJU3 needed due https://github.com/openstack-charmers/zaza/blob/b22c2eed4c322f1dfc14ffb2d31e0dd18c911a40/setup.py#L47 to support Juju3+
+      # Don't tear down the OpenStack model if tests fail and --keep-faulty-model is
+      # specified - this allows for interactive debugging of failed runs
       command: "TEST_JUJU3=1 make functional ${{ github.event.inputs.debug_enabled && '--keep-faulty-model' }}"
       juju-channel: "3.4/stable"
       nested-containers: false
