@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       debug_enabled:
-        description: 'Avoid model destruction to aid debugging failed runs'
+        description: 'Skip model cleanup'
         required: false
         default: false
         type: boolean
