@@ -30,7 +30,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        command: ["TEST_JUJU3=1 make functional --keep-faulty-model"]  # TEST_JUJU3 needed due https://github.com/openstack-charmers/zaza/blob/b22c2eed4c322f1dfc14ffb2d31e0dd18c911a40/setup.py#L47 to support Juju3+
+        command: ["TEST_JUJU3=1 make functional -- --keep-faulty-model"]  # TEST_JUJU3 needed due https://github.com/openstack-charmers/zaza/blob/b22c2eed4c322f1dfc14ffb2d31e0dd18c911a40/setup.py#L47 to support Juju3+
         juju-channel: ["3.4/stable"]
         
     with:
