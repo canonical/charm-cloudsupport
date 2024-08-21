@@ -3,4 +3,5 @@ ops
 click
 fabric
 python-openstackclient
+openstacksdk<3.3.0 # LP#2074200
 PyYAML
