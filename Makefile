@@ -1,8 +1,8 @@
 PYTHON := /usr/bin/python3
 
 PROJECTPATH=$(dir $(realpath $(MAKEFILE_LIST)))
-METADATA_FILE="metadata.yaml"
-CHARM_NAME=$(shell cat ${PROJECTPATH}/${METADATA_FILE} | grep -E '^name:' | awk '{print $$2}')
+METADATA_FILE="charmcraft.yaml"
+CHARM_NAME=$(shell awk '/^name:/ {print $2}' ${PROJECTPATH}/${METADATA_FILE})
 
 help:
 	@echo "This project supports the following targets"
