@@ -1,5 +1,8 @@
 #!/bin/bash
-charm=$(grep -E "^name:" charmcraft.yaml | awk '{print $2}')
+
+set -euo pipefail
+
+charm=$(awk '/^name:/ {print $2}' charmcraft.yaml)
 echo "renaming ${charm}_*.charm to ${charm}.charm"
 echo -n "pwd: "
 pwd
