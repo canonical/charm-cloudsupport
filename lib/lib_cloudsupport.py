@@ -163,9 +163,7 @@ class CloudSupportHelper:
             raise CloudSupportError(
                 "Please disable host `{}` before stop vms".format(compute_node)
             )
-        vms = con(cloud_name).compute.servers(
-            host=compute_node, all_tenants=True, status="ACTIVE"
-        )
+        vms = con(cloud_name).compute.servers(host=compute_node, all_tenants=True, status="ACTIVE")
         for vm in vms:
             try:
                 logging.debug("stopping VM: %s(%s)", vm.name, vm.id)

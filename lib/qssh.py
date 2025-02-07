@@ -35,9 +35,7 @@ def get_port(srv, network=None):
     else:
         ports = [p for p in ports if p["network_id"] == network]
         if not ports:
-            raise QsshError(
-                "No ports for instance {} found on net {}".format(srv.id, network)
-            )
+            raise QsshError("No ports for instance {} found on net {}".format(srv.id, network))
         # If we have mult. ports for a network we're also just using the first one
         port = ports[0]
     return port

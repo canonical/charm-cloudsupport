@@ -1,4 +1,8 @@
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
 """Test deployment and functionality of the cloudsupport charm."""
+
 import json
 import logging
 import os
@@ -57,9 +61,7 @@ class CloudSupportBaseTest(openstack_test_utils.OpenStackBaseTest):
     def get_test_instances(self):
         """Get instances that look like our test instance."""
         return [
-            vm
-            for vm in self.nova_client.servers.list()
-            if vm.name.startswith("cloudsupport-test")
+            vm for vm in self.nova_client.servers.list() if vm.name.startswith("cloudsupport-test")
         ]
 
     def delete_test_instances(self):
@@ -238,9 +240,7 @@ class CloudSupportTests(CloudSupportBaseTest):
         name_prefix = "cloudsupport-test"
         expected_nrpe_check = (
             "command[check_stale_server]={} --cloud-name {} --name-prefix {} "
-            "--warn-days 7 --crit-days 14".format(
-                nagios_plugin, cloud_name, name_prefix
-            )
+            "--warn-days 7 --crit-days 14".format(nagios_plugin, cloud_name, name_prefix)
         )
 
         cmd = "cat /etc/nagios/nrpe.d/check_stale_server.cfg"

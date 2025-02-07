@@ -1,4 +1,5 @@
 """This module contains methods to run OpenStack commands."""
+
 import logging
 import os
 import re
@@ -144,9 +145,7 @@ def ensure_flavor(name, vcpus, ram, disk, vnfspecs=True, cloud_name="cloud1"):
         logging.info("Delete flavor %s", flavor)
         con(cloud_name).compute.delete_flavor(flavor)
     flavor_spec = DEFAULT_FLAVOR.copy()
-    flavor_spec.update(
-        {"name": name, "flavorid": name, "vcpus": vcpus, "ram": ram, "disk": disk}
-    )
+    flavor_spec.update({"name": name, "flavorid": name, "vcpus": vcpus, "ram": ram, "disk": disk})
     flavor = con(cloud_name).compute.create_flavor(**flavor_spec)
     extra_specs = {
         "aggregate_instance_extra_specs:cloudsupport-test-agg": "true",
@@ -175,9 +174,7 @@ def ensure_host_aggregate(agg_name, nodes, cloud_name="cloud1"):
     agg = con(cloud_name).compute.find_aggregate(agg_name)
     if not agg:
         agg = con(cloud_name).compute.create_aggregate(name=agg_name)
-        con(cloud_name).compute.set_aggregate_metadata(
-            agg.id, {"cloudsupport-test-agg": "true"}
-        )
+        con(cloud_name).compute.set_aggregate_metadata(agg.id, {"cloudsupport-test-agg": "true"})
         logging.info("Created %s", agg_name)
     if agg.hosts:
         for node in agg.hosts:
@@ -352,11 +349,7 @@ def is_ovn_used(hypervisor_hostname, cloud_name="cloud1"):
     """
     if (
         len(
-            list(
-                con(cloud_name).network.agents(
-                    host=hypervisor_hostname, binary="ovn-controller"
-                )
-            )
+            list(con(cloud_name).network.agents(host=hypervisor_hostname, binary="ovn-controller"))
         )
         > 0
     ):

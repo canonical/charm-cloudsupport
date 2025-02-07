@@ -1,6 +1,7 @@
-#!/usr/bin/env python3
-# Copyright 2022 Canonical
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
+
+# !/usr/bin/env python3
 """Unittests for lib-cloudsupport."""
 from unittest import mock
 from unittest.mock import MagicMock, call
@@ -46,9 +47,7 @@ def mock_vm(id_, name=None):
         ),
     ],
 )
-def test_check_compute_node_no_services(
-    openstack, name, status, hypervisors, exp_result
-):
+def test_check_compute_node_no_services(openstack, name, status, hypervisors, exp_result):
     """Check test of existing compute-node."""
     openstack.compute.hypervisors.return_value = hypervisors
     result = CloudSupportHelper._check_compute_node("test-cloud", name, status)
@@ -83,9 +82,7 @@ def test_stop_vms(openstack, servers, servers_side_effects, exp_stopped, exp_fai
     openstack.compute.servers.assert_called_once_with(
         host="test-node", all_tenants=True, status="ACTIVE"
     )
-    openstack.compute.stop_server.assert_has_calls(
-        [call(server.id) for server in servers]
-    )
+    openstack.compute.stop_server.assert_has_calls([call(server.id) for server in servers])
 
     assert stopped_vms == exp_stopped
     assert failed_to_stop == exp_failed
@@ -128,13 +125,9 @@ def test_start_vms(
         host="test-node", all_tenants=True, status="SHUTOFF"
     )
     if force_all:
-        openstack.compute.start_server.assert_has_calls(
-            [call(server.id) for server in servers]
-        )
+        openstack.compute.start_server.assert_has_calls([call(server.id) for server in servers])
     else:
-        openstack.compute.start_server.assert_has_calls(
-            [call(server) for server in stopped_vms]
-        )
+        openstack.compute.start_server.assert_has_calls([call(server) for server in stopped_vms])
 
     assert started_vms == exp_started
     assert failed_to_start == exp_failed
