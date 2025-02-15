@@ -173,6 +173,9 @@ relations:
   - - 'nova-compute:amqp'
     - 'rabbitmq-server:amqp'
 
+  - - nova-compute:secrets-storage
+    - vault:secrets
+
   - - 'nova-cloud-controller:shared-db'
     - 'nova-cloud-controller-mysql-router:shared-db'
   - - 'nova-cloud-controller-mysql-router:db-router'
