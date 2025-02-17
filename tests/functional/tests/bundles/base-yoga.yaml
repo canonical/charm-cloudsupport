@@ -151,6 +151,7 @@ applications:
       force-raw-images: true
       libvirt-image-backend: rbd
       migration-auth-type: ssh
+      virt-type: lxc
       openstack-origin: *openstack-origin
       verbose: true
       debug: true
