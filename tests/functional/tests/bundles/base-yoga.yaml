@@ -18,7 +18,7 @@ machines:
   '8':
   '9':
   '10':
-    constraints: mem=4096M cores=4 virt-type=virtual-machine
+    constraints: mem=4096M cores=4 virt-type=virtual-machine root-disk=20G
   '11':
   '12':
   '13':
@@ -143,8 +143,6 @@ applications:
     charm: ch:nova-compute
     channel: yoga/stable
     num_units: 1
-    storage:
-      ephemeral-device: '40G'
     options:
       options:
       openstack-origin: *openstack-origin
