@@ -144,10 +144,7 @@ applications:
     channel: yoga/stable
     num_units: 1
     options:
-      options:
       openstack-origin: *openstack-origin
-      verbose: true
-      debug: true
     to:
       - '10'
   vault:
