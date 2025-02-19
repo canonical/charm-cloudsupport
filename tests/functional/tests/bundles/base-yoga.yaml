@@ -18,7 +18,7 @@ machines:
   '8':
   '9':
   '10':
-    constraints: mem=4096M cores=4
+    constraints: mem=4096M cores=4 virt-type=virtual-machine root-disk=20G
   '11':
   '12':
   '13':
@@ -143,15 +143,8 @@ applications:
     charm: ch:nova-compute
     channel: yoga/stable
     num_units: 1
-    storage:
-      ephemeral-device: '40G'
     options:
       openstack-origin: *openstack-origin
-      config-flags: auto_assign_floating_ip=False
-      enable-live-migration: false
-      aa-profile-mode: enforce
-      debug: true
-      libvirt-image-backend: qcow2
     to:
       - '10'
   vault:
