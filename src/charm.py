@@ -1,7 +1,7 @@
-#! /usr/bin/env python3
-# -*- coding: utf-8 -*-
-# vim:fenc=utf-8
+# Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
+
+# ! /usr/bin/env python3
 """Operator charm main library."""
 import logging
 
@@ -32,15 +32,9 @@ class CloudSupportCharm(CharmBase):
         self.framework.observe(self.on.install, self.on_install)
         self.framework.observe(self.on.config_changed, self.on_config_changed)
         self.framework.observe(self.on.upgrade_charm, self.on_install)
-        self.framework.observe(
-            self.on.create_test_instances_action, self.on_create_test_instances
-        )
-        self.framework.observe(
-            self.on.delete_test_instances_action, self.on_delete_test_instances
-        )
-        self.framework.observe(
-            self.on.test_connectivity_action, self.on_test_connectivity
-        )
+        self.framework.observe(self.on.create_test_instances_action, self.on_create_test_instances)
+        self.framework.observe(self.on.delete_test_instances_action, self.on_delete_test_instances)
+        self.framework.observe(self.on.test_connectivity_action, self.on_test_connectivity)
         self.framework.observe(self.on.get_ssh_cmd_action, self.on_get_ssh_cmd)
         self.framework.observe(self.on.stop_vms_action, self.on_stop_vms)
         self.framework.observe(self.on.start_vms_action, self.on_start_vms)
@@ -113,9 +107,7 @@ class CloudSupportCharm(CharmBase):
         """Run delete-test-instance action."""
         nodes = event.params["nodes"].split(",")
         pattern = event.params["pattern"]
-        delete_results = delete_instance(
-            nodes, pattern, cloud_name=self.helper.cloud_name
-        )
+        delete_results = delete_instance(nodes, pattern, cloud_name=self.helper.cloud_name)
         event.set_results({"delete-results": delete_results})
 
     def on_test_connectivity(self, event):
@@ -127,9 +119,7 @@ class CloudSupportCharm(CharmBase):
                 instance = None
             else:
                 instance = event.params.get("instance")
-            test_results = test_connectivity(
-                instance, cloud_name=self.helper.cloud_name
-            )
+            test_results = test_connectivity(instance, cloud_name=self.helper.cloud_name)
         except BaseException as err:
             event.set_results({"error": err})
             raise
@@ -176,9 +166,7 @@ class CloudSupportCharm(CharmBase):
             compute_node, self.state.stopped_vms, force_all, cloud_name
         )
         self.state.stopped_vms = []  # clear stored IDs
-        event.set_results(
-            {"started-vms": started_vms, "failed-to-start": failed_to_start}
-        )
+        event.set_results({"started-vms": started_vms, "failed-to-start": failed_to_start})
 
     def on_nrpe_external_master_relation_joined(self, event):
         """Handle nrpe-external-master relation joined."""

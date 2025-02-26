@@ -1,4 +1,7 @@
-#!/usr/bin/env python3
+# Copyright 2025 Canonical Ltd.
+# See LICENSE file for licensing details.
+
+# !/usr/bin/env python3
 """Check for stale servers with prefix."""
 
 import argparse
