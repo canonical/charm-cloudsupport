@@ -1,8 +1,9 @@
+#!/usr/bin/env python3
+
 # Copyright 2025 Canonical Ltd.
 # See LICENSE file for licensing details.
-
-# ! /usr/bin/env python3
 """Operator charm main library."""
+
 import logging
 
 from lib_cloudsupport import CloudSupportHelper

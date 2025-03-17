@@ -1,7 +1,7 @@
+# !/usr/bin/env python3
+
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
-
-# !/usr/bin/env python3
 """Unittests for lib-cloudsupport."""
 from unittest import mock
 from unittest.mock import MagicMock, call

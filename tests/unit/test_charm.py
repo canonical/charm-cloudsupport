@@ -1,7 +1,7 @@
+# !/usr/bin/env python3
+
 # Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
-
-# !/usr/bin/env python3
 
 """Unittests for charm-cloudsupport."""
 from contextlib import contextmanager
