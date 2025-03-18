@@ -1,5 +1,6 @@
-# Copyright 2022 Canonical
+# Copyright 2022 Canonical Ltd.
 # See LICENSE file for licensing details.
+
 """Configuration file for tests."""
 from unittest import mock
 
