@@ -7,9 +7,8 @@
 from contextlib import contextmanager
 from unittest import mock
 
-from os_testing import CloudSupportError
-
 import pytest
+from os_testing import CloudSupportError
 
 
 @contextmanager

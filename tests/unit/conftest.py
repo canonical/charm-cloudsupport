@@ -4,13 +4,11 @@
 """Configuration file for tests."""
 from unittest import mock
 
-from charm import CloudSupportCharm
-
 import lib_cloudsupport
-
+import pytest
 from ops.testing import Harness
 
-import pytest
+from charm import CloudSupportCharm
 
 
 @pytest.fixture

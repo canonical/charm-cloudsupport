@@ -7,12 +7,10 @@
 import logging
 
 from lib_cloudsupport import CloudSupportHelper
-
 from ops.charm import CharmBase
 from ops.framework import StoredState
 from ops.main import main
 from ops.model import ActiveStatus
-
 from os_testing import (
     CloudSupportError,
     create_instance,
