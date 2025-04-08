@@ -9,14 +9,11 @@ import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 
-from tenacity import retry, stop_after_attempt, wait_fixed
-
-from tests.modules.test_utils import gen_test_ssh_keys
-
 import zaza.utilities.deployment_env as deployment_env
+from tenacity import retry, stop_after_attempt, wait_fixed
+from tests.modules.test_utils import gen_test_ssh_keys
 from zaza import model
 from zaza.openstack.charm_tests.glance.setup import add_image
-
 
 userdata_tmpl = """
 cloudinit-userdata: |

@@ -6,13 +6,10 @@
 from unittest import mock
 from unittest.mock import MagicMock, call
 
-from lib_cloudsupport import CloudSupportHelper
-
-from openstack.exceptions import SDKException
-
-from os_testing import CloudSupportError
-
 import pytest
+from lib_cloudsupport import CloudSupportHelper
+from openstack.exceptions import SDKException
+from os_testing import CloudSupportError
 
 
 def mock_service(name, status):

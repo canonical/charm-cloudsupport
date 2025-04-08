@@ -10,13 +10,11 @@ import textwrap
 import time
 from pathlib import Path
 
-from tenacity import retry, stop_after_attempt, wait_fixed
-
-from tests.modules import test_utils
-
 import zaza.openstack.charm_tests.test_utils as openstack_test_utils
 import zaza.openstack.utilities.openstack as openstack_utils
 import zaza.utilities.deployment_env as deployment_env
+from tenacity import retry, stop_after_attempt, wait_fixed
+from tests.modules import test_utils
 from zaza import model
 
 logger = logging.getLogger(__name__)

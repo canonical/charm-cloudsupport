@@ -12,7 +12,6 @@ import sys
 from enum import IntEnum
 
 import openstack
-
 import yaml
 
 
