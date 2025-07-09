@@ -1,3 +1,6 @@
+> [!NOTE]
+> This charm is under maintenance mode. Only critical bug will be handled.
+
 # Overview
 
 Support charm for OpenStack operations. It's main purpose is to package common tasks into easy-to-use actions. 
